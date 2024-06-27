@@ -15,7 +15,6 @@
 #include <GameFramework/SpringArmComponent.h>
 #include <Blueprint/UserWidget.h>
 #include <Kismet/GameplayStatics.h>
-#include <Components/WidgetComponent.h>
 #include <EnhancedInputComponent.h>
 #include <EnhancedInputSubsystems.h>
 
@@ -35,8 +34,6 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	PlayerCamera->bUsePawnControlRotation = true;
 
 	MinimapSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Minimap Spring Arm"));
-	
-	WidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerInfoWidget"));
 
 	SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Scene Capture Camera"));
 	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
@@ -63,17 +60,6 @@ void ADCPlayerCharacter::BeginPlay()
 		{
 			Subsystem->AddMappingContext(DefaultInputMappingContext, 0);
 		}
-	}
-
-	check(WidgetComponent);
-
-	WidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
-	WidgetComponent->AddRelativeLocation(FVector(0.0f, 0.0f, 100.0f));
-
-	if (IsLocallyControlled())
-	{
-		WidgetComponent->SetVisibility(false);
 	}
 
 	APlayerController* const PlayerController = UGameplayStatics::GetPlayerController(this, 0);

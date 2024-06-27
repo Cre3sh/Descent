@@ -10,7 +10,6 @@
 struct FInputActionValue;
 class UInputAction;
 class UInputMappingContext;
-class UWidgetComponent;
 class ADCInteractableObject;
 class UDCUISceneManager;
 class UDCSceneData;
@@ -138,9 +137,6 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TSoftObjectPtr<USoundBase>> FootstepSounds = {};
-
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UWidgetComponent> WidgetComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> PlayerCamera = nullptr;
