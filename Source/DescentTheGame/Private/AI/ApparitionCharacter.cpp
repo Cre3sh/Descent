@@ -88,6 +88,7 @@ void AApparitionCharacter::Tick(float DeltaTime)
 	check(TerrorSoundComponent);
 	check(FootStepSoundComponent);
 
+	// todo this code needs removing, this is a relic from when the game was singleplayer, this needs to be moved into a component eventually
 	if (!TerrorSoundComponent->IsPlaying())
 	{
 		TerrorSoundComponent->Play();

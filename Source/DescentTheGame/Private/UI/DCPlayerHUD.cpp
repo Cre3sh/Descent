@@ -109,8 +109,7 @@ void UDCPlayerHUD::SetupPlayerInfoWidgetForPlayer(APlayerState* PlayerState)
 	}
 
 	APawn* const Pawn = PlayerState->GetPawn();
-
-	// this fails for clients
+	
 	if (!IsValid(Pawn))
 	{
 		return;
