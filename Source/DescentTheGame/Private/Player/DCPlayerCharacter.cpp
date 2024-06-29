@@ -82,7 +82,11 @@ void ADCPlayerCharacter::BeginPlay()
 		}
 	}
 
-	/*Make it so the flash light follows the camera's rotation*/
+	check(FootstepAudioComponent);
+
+	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	/*Make it so the flashlight follows the camera's rotation*/
 
 	check(Torch);
 	check(MinimapSpringArmComponent);
@@ -173,21 +177,15 @@ void ADCPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::Move);
-
-		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::Look);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::InteractCheck);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::StartSprint);
+		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ADCPlayerCharacter::EndSprint);
 	}
 
-	InputComponent->BindAction(TEXT("Interact"), IE_Pressed, this, &ADCPlayerCharacter::InteractCheck);
-	InputComponent->BindAction(TEXT("Crouch"), IE_Pressed, this, &ADCPlayerCharacter::StartCrouch);
-	InputComponent->BindAction(TEXT("Crouch"), IE_Released, this, &ADCPlayerCharacter::EndCrouch);
-	InputComponent->BindAction(TEXT("Sprint"), IE_Pressed, this, &ADCPlayerCharacter::StartSprint);
-	InputComponent->BindAction(TEXT("Sprint"), IE_Released, this, &ADCPlayerCharacter::EndSprint);
-
 	// todo add back once we have a main menu
-	//InputComponent->BindAction(TEXT("Escape"), IE_Pressed, SceneManager.Get(), &UDCUISceneManager::OnPlayerPressedEscape);
+	//EnhancedInputComponent->BindAction(EscapeAction, ETriggerEvent::Completed, SceneManager.Get(), &UDCUISceneManager::OnPlayerPressedEscape);
 }
 
 void ADCPlayerCharacter::StartSprint()
@@ -201,7 +199,7 @@ void ADCPlayerCharacter::StartSprint()
 
 	if (bCrouching) return;
 
-	/*The player is sprinting so we want them to be easily audible by the AI*/
+	/*The player is sprinting, so we want them to be easily audible by the AI*/
 
 	PlayerLoudness = 1.0f;
 

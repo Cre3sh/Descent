@@ -3,10 +3,9 @@
 #pragma once
 
 #include <Engine/DataAsset.h>
+#include <GameplayTags.h>
 
 #include "DCSceneData.generated.h"
-
-struct FGameplayTag;
 
 UCLASS()
 class UDCSceneData : public UDataAsset

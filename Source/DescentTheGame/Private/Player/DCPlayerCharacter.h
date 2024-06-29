@@ -136,6 +136,12 @@ private:
 	TObjectPtr<UInputAction> LookAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> InteractAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> SprintAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
 	TArray<TSoftObjectPtr<USoundBase>> FootstepSounds = {};
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
