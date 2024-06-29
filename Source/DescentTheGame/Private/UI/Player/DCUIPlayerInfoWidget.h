@@ -15,12 +15,9 @@ class UDCUIPlayerInfoWidget : public UUserWidget
 
 public:
 	// Sets a player to track on this widget
-	void SetTrackedPlayer(APlayerState* PlayerState);
+	void SetTrackedPlayer(const FText& PlayerName);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UTextBlock> PlayerNameText = nullptr;
-
-private:
-	TWeakObjectPtr<APlayerState> TrackedPlayerState = nullptr;
 };

@@ -19,7 +19,6 @@ class UDCPlayerHUD : public UUserWidget
 public:
 	// Begin UUserWidget override
 	virtual void NativeConstruct() override;
-	virtual void NativeDestruct() override;
 	// End UUserWidget override
 
 	void OnPlayerDied();
@@ -34,13 +33,4 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UMediaSource> DeathSceneMediaSource = nullptr;
-
-	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UUserWidget> PlayerInfoWidgetClass = nullptr;
-
-private:
-	UFUNCTION()
-	void OnNewPlayerJoined(APlayerState* PlayerState);
-
-	void SetupPlayerInfoWidgetForPlayer(APlayerState* PlayerState);
 };

@@ -17,9 +17,14 @@
 #include <Kismet/GameplayStatics.h>
 #include <EnhancedInputComponent.h>
 #include <EnhancedInputSubsystems.h>
+#include <Components/WidgetComponent.h>
+#include <Net/UnrealNetwork.h>
 
+#include "Base/DCAdvancedGameInstance.h"
 #include "Interactable/DCInteractableObject.h"
+#include "Net/Core/PushModel/PushModel.h"
 #include "UI/DCPlayerHUD.h"
+#include "UI/Player/DCUIPlayerInfoWidget.h"
 #include "UI/Systems/DCUISceneManager.h"
 
 // Sets default values
@@ -28,12 +33,16 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	bReplicates = true;
+
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	PlayerCamera->SetupAttachment(RootComponent);
 	PlayerCamera->SetRelativeLocation(FVector(0, 0, 40));
 	PlayerCamera->bUsePawnControlRotation = true;
 
 	MinimapSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Minimap Spring Arm"));
+
+	PlayerInfoWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerInfoWidget"));
 
 	SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Scene Capture Camera"));
 	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
@@ -52,38 +61,52 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 void ADCPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	
+	APlayerController* const PlayerController = GetController<APlayerController>();
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+
+	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+
+	check(InputSubsystem);
 
 	// Add Input Mapping Context
-	if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
+
+	if (PlayerController->IsLocalController())
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
+		if (IsValid(PlayerHUD))
 		{
-			Subsystem->AddMappingContext(DefaultInputMappingContext, 0);
+			PlayerHUD->AddToViewport();
+		}
+
+		SceneManager = CreateWidget<UDCUISceneManager>(PlayerController, SceneManagerClass);
+		if (IsValid(SceneManager))
+		{
+			SceneManager->AddToViewport();
 		}
 	}
 
-	APlayerController* const PlayerController = UGameplayStatics::GetPlayerController(this, 0);
-
-	if (IsValid(PlayerController))
+	// Set up local player info
+	if (IsLocallyControlled())
 	{
-		if (PlayerController->IsLocalController())
-		{
-			PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
-			if (IsValid(PlayerHUD))
-			{
-				PlayerHUD->AddToViewport();
-			}
+		const UDCAdvancedGameInstance* const GameInstance = GetGameInstance<UDCAdvancedGameInstance>();
 
-			SceneManager = CreateWidget<UDCUISceneManager>(UGameplayStatics::GetPlayerController(this, 0), SceneManagerClass);
-			if (IsValid(SceneManager))
-			{
-				SceneManager->AddToViewport();
-			}
-		}
+		check(GameInstance);
+
+		FText PlayerName = GameInstance->LocalPlayerName;
+
+		Server_SetPlayerName(PlayerName);
 	}
 
+	check(PlayerInfoWidgetComponent);
 	check(FootstepAudioComponent);
 
+	PlayerInfoWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	PlayerInfoWidgetComponent->AddRelativeLocation(FVector(0, 0, 100.0f));
 	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	/*Make it so the flashlight follows the camera's rotation*/
@@ -95,6 +118,7 @@ void ADCPlayerCharacter::BeginPlay()
 	Torch->AttachToComponent(PlayerCamera, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	MinimapSpringArmComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
 
+	// Need to ignore the ceiling on the minimap
 	TArray<AActor*> Actors;
 	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), AActor::StaticClass(), FName("Ceiling"), Actors);
 
@@ -125,6 +149,16 @@ void ADCPlayerCharacter::PostInitializeComponents()
 	LoadSoundFiles();
 }
 
+void ADCPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	FDoRepLifetimeParams Params;
+	Params.bIsPushBased = true;
+
+	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, CustomPlayerName, Params);
+
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
 ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
 {
 	return LastInteractedObject.Get();
@@ -138,6 +172,13 @@ UMediaSoundComponent* ADCPlayerCharacter::GetMediaSoundComponent() const
 UDCUISceneManager* ADCPlayerCharacter::GetSceneManager() const
 {
 	return SceneManager;
+}
+
+void ADCPlayerCharacter::Server_SetPlayerName_Implementation(const FText& PlayerName)
+{
+	CustomPlayerName = PlayerName;
+
+	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, CustomPlayerName, this);
 }
 
 void ADCPlayerCharacter::Server_ReportNoise_Implementation()
@@ -237,6 +278,13 @@ void ADCPlayerCharacter::EndSprint()
 	CharacterMovementComponent->MaxWalkSpeed = WalkSpeed;
 }
 
+void ADCPlayerCharacter::SetPlayerInfoName()
+{
+	UDCUIPlayerInfoWidget* const PlayerInfoWidget = Cast<UDCUIPlayerInfoWidget>(PlayerInfoWidgetComponent->GetWidget());
+
+	PlayerInfoWidget->SetTrackedPlayer(CustomPlayerName);
+}
+
 void ADCPlayerCharacter::ToggleLight() const
 {
 	if (!HasFlashlight) return;
@@ -258,6 +306,22 @@ void ADCPlayerCharacter::LoadSoundFiles()
 	}
 
 	BaseLoader.RequestAsyncLoad(AudioSoftObjectPaths);
+}
+
+void ADCPlayerCharacter::OnRep_CustomPlayerName()
+{
+	check(PlayerInfoWidgetComponent);
+
+	UDCUIPlayerInfoWidget* const PlayerInfoWidget = Cast<UDCUIPlayerInfoWidget>(PlayerInfoWidgetComponent->GetWidget());
+
+	if (!IsValid(PlayerInfoWidget))
+	{
+		// Probably best not to rely on a hard coded value of time so DO NOT do this
+		GetWorld()->GetTimerManager().SetTimer(WidgetRetryConstruction, this, &ADCPlayerCharacter::SetPlayerInfoName, 1.0f);
+		return;
+	}
+
+	PlayerInfoWidget->SetTrackedPlayer(CustomPlayerName);
 }
 
 void ADCPlayerCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)

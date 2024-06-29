@@ -4,12 +4,9 @@
 
 #include <Components/TextBlock.h>
 
-#include <AdvancedSteamFriendsLibrary.h>
-#include <AdvancedSessionsLibrary.h>
-
-void UDCUIPlayerInfoWidget::SetTrackedPlayer(APlayerState* PlayerState)
+void UDCUIPlayerInfoWidget::SetTrackedPlayer(const FText& PlayerName)
 {
-	TrackedPlayerState = PlayerState;
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
 	check(PlayerNameText);
 
@@ -25,32 +22,5 @@ void UDCUIPlayerInfoWidget::SetTrackedPlayer(APlayerState* PlayerState)
 		return;
 	}
 
-	if (!IsValid(PlayerState))
-	{
-		return;
-	}
-
-	const APawn* const Pawn = PlayerState->GetPawn();
-	if (!IsValid(Pawn))
-	{
-		return;
-	}
-
-	FBPUniqueNetId UniqueNetID;
-	UAdvancedSessionsLibrary::GetUniqueNetID(Cast<APlayerController>(Pawn->GetController()), UniqueNetID);
-
-	const FText PlayerName = FText::FromString(UAdvancedSteamFriendsLibrary::GetSteamPersonaName(UniqueNetID));
-
-	if (PlayerName.IsEmpty())
-	{
-		int32 ran = FMath::RandRange(2312, 565435);
-		PlayerNameText->SetText(FText::AsNumber(ran));
-		return;
-	}
-
 	PlayerNameText->SetText(PlayerName);
-
-	GEngine->AddOnScreenDebugMessage(-1, 20.0f, FColor::Red, PlayerName.ToString());
-
-	UE_LOG(LogTemp, Error, TEXT("PLAYER NAME: %s"), *PlayerName.ToString());
 }

@@ -7,6 +7,7 @@
 
 #include "DCPlayerCharacter.generated.h"
 
+class UWidgetComponent;
 struct FInputActionValue;
 class UInputAction;
 class UInputMappingContext;
@@ -40,6 +41,7 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
 
 	ADCInteractableObject* GetLastInteractedObject() const;
@@ -51,6 +53,9 @@ public:
 	UDCUISceneManager* GetSceneManager() const;
 
 private:
+	UFUNCTION(Server, Reliable)
+	void Server_SetPlayerName(const FText& PlayerName);
+
 	UFUNCTION(Server, Reliable)
 	void Server_ReportNoise();
 
@@ -77,6 +82,11 @@ private:
 	UFUNCTION(Server, Reliable)
 	void Server_UpdateMovementState();
 	void UpdateMovementState();
+	
+	UFUNCTION()
+	void OnRep_CustomPlayerName();
+	UPROPERTY(ReplicatedUsing = OnRep_CustomPlayerName)
+	FText CustomPlayerName = FText::GetEmpty();
 
 	void UpdateCamera();
 
@@ -100,7 +110,9 @@ private:
 	void Server_EndSprint();
 	void EndSprint();
 
-	/*Toggles the flash light*/
+	void SetPlayerInfoName();
+
+	/*Toggles the flashlight*/
 	void ToggleLight() const;
 
 	// Called at game start
@@ -140,6 +152,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UInputAction> SprintAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UWidgetComponent> PlayerInfoWidgetComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
 	TArray<TSoftObjectPtr<USoundBase>> FootstepSounds = {};
@@ -193,4 +208,6 @@ private:
 	float DistanceTravelled = 0.0f;
 	
 	EDCMovementState CurrentPlayerMovementState;
+
+	FTimerHandle WidgetRetryConstruction;
 };

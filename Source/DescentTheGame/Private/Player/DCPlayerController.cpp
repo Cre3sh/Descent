@@ -26,12 +26,7 @@ void ADCPlayerController::OnPossess(APawn* InPawn)
 
 	VoipTalkerComponent = Cast<UVOIPTalker>(AddComponentByClass(UVOIPTalker::StaticClass(), false, FTransform::Identity, false));
 
-	if (!IsValid(VoipTalkerComponent))
-	{
-		return;
-	}
-
-	VoipTalkerComponent->SetIsReplicated(true);
+	check(VoipTalkerComponent);
 
 	APlayerState* const OwningPlayerState = PlayerState;
 	if (IsValid(OwningPlayerState))

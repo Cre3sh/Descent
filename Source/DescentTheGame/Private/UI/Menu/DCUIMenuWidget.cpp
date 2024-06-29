@@ -3,10 +3,28 @@
 #include "UI/Menu/DCUIMenuWidget.h"
 
 #include <Components/Button.h>
+#include <Components/EditableText.h>
+
+#include <AdvancedSteamFriendsLibrary.h>
+#include <AdvancedSessionsLibrary.h>
+
+#include "Base/DCAdvancedGameInstance.h"
 
 void UDCUIMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	check(EditablePlayerNameText);
+
+	FBPUniqueNetId UniqueNetID;
+	UAdvancedSessionsLibrary::GetUniqueNetID(Cast<APlayerController>(GetOwningPlayer()), UniqueNetID);
+
+	FText PlayerNameText = FText::FromString(UAdvancedSteamFriendsLibrary::GetSteamPersonaName(UniqueNetID));
+
+	if (!PlayerNameText.IsEmpty())
+	{
+		EditablePlayerNameText->SetText(PlayerNameText);
+	}
 
 	const UWorld* const World = GetWorld();
 	if (IsValid(World))
@@ -40,5 +58,18 @@ void UDCUIMenuWidget::NativeDestruct()
 		}
 	}
 
+	check(EditablePlayerNameText);
+
+	EditablePlayerNameText->OnTextChanged.AddDynamic(this, &UDCUIMenuWidget::OnPlayerNameChanged);
+
 	Super::NativeDestruct();
+}
+
+void UDCUIMenuWidget::OnPlayerNameChanged(const FText& Text)
+{
+	UDCAdvancedGameInstance* const GameInstance = GetGameInstance<UDCAdvancedGameInstance>();
+
+	check(GameInstance);
+
+	GameInstance->LocalPlayerName = Text;
 }
