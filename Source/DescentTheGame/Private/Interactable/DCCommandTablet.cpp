@@ -13,6 +13,7 @@ ADCCommandTablet::ADCCommandTablet()
 
 void ADCCommandTablet::Interact(ADCPlayerCharacter* InteractingCharacter)
 {
+	// Check for multiple people trying to interact
 	if (IsBeingInteracted())
 	{
 		return;
@@ -26,7 +27,9 @@ void ADCCommandTablet::Interact(ADCPlayerCharacter* InteractingCharacter)
 	SetIsBeingInteracted(true);
 	SetOwner(InteractingCharacter);
 
-	// Add a check for multiple people trying to interact
+	InteractingCharacter->StartedInteractingWithObject(InteractionObjectTag);
+	InteractingCharacter->SetLastInteractedObject(this);
+	
 	if (!InteractingCharacter->IsLocallyControlled())
 	{
 		return;

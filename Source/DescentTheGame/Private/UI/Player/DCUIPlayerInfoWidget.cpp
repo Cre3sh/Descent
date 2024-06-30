@@ -3,24 +3,35 @@
 #include "UI/Player/DCUIPlayerInfoWidget.h"
 
 #include <Components/TextBlock.h>
+#include <GameplayTagContainer.h>
+#include <Components/Image.h>
+
+#include "DCUIPlayerInteractionInfoData.h"
 
 void UDCUIPlayerInfoWidget::SetTrackedPlayer(const FText& PlayerName)
 {
-	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-
 	check(PlayerNameText);
 
-	APlayerController* const OwningPlayerController = GetOwningPlayer();
-	if (!IsValid(OwningPlayerController))
+	PlayerNameText->SetText(PlayerName);
+	UE_LOG(LogTemp, Warning, TEXT("Name %s"), *PlayerName.ToString());
+}
+
+void UDCUIPlayerInfoWidget::PlayerStartedInteraction(FGameplayTag InteractionTag)
+{
+	check(InteractionImage);
+	check(PlayerInteractionInfoData);
+
+	UMaterialInstance* const MaterialInstance = PlayerInteractionInfoData->InteractionMaterials.FindRef(InteractionTag);
+	if (!IsValid(MaterialInstance))
 	{
 		return;
 	}
 
-	if (!OwningPlayerController->IsLocalPlayerController())
-	{
-		SetVisibility(ESlateVisibility::Collapsed);
-	}
+	InteractionImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	InteractionImage->SetBrushFromMaterial(MaterialInstance);
+}
 
-	PlayerNameText->SetText(PlayerName);
-	UE_LOG(LogTemp, Warning, TEXT("Name %s"), *PlayerName.ToString());
+void UDCUIPlayerInfoWidget::PlayerStoppedInteraction()
+{
+	InteractionImage->SetVisibility(ESlateVisibility::Collapsed);
 }

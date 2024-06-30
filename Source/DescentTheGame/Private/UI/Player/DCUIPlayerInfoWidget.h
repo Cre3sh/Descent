@@ -6,6 +6,9 @@
 
 #include "DCUIPlayerInfoWidget.generated.h"
 
+class UImage;
+class UDCUIPlayerInteractionInfoData;
+struct FGameplayTag;
 class UTextBlock;
 
 UCLASS()
@@ -17,7 +20,17 @@ public:
 	// Sets a player to track on this widget
 	void SetTrackedPlayer(const FText& PlayerName);
 
+	void PlayerStartedInteraction(FGameplayTag InteractionTag);
+
+	void PlayerStoppedInteraction();
+
 protected:
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
+	TObjectPtr<UImage> InteractionImage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UTextBlock> PlayerNameText = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction")
+	TObjectPtr<UDCUIPlayerInteractionInfoData> PlayerInteractionInfoData = nullptr;
 };

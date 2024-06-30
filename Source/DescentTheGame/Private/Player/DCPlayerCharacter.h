@@ -7,6 +7,7 @@
 
 #include "DCPlayerCharacter.generated.h"
 
+struct FGameplayTag;
 class UWidgetComponent;
 struct FInputActionValue;
 class UInputAction;
@@ -43,6 +44,14 @@ public:
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
+
+	void StartedInteractingWithObject(const FGameplayTag& GameplayTag) const;
+
+	// Currently interactions only support one at a time, so we don't need to pass in a tag
+	// BUT we might want to change this later so this is probably going to be temporary
+	void StoppedInteractingWithObject();
+
+	void SetLastInteractedObject(ADCInteractableObject* InteractableObject);
 
 	ADCInteractableObject* GetLastInteractedObject() const;
 
@@ -203,6 +212,9 @@ private:
 	UPROPERTY()
 	TObjectPtr<UDCPlayerHUD> PlayerHUD = nullptr;
 
+	UFUNCTION()
+	void OnRep_LastInteractedObject();
+	UPROPERTY(ReplicatedUsing = OnRep_LastInteractedObject)
 	TWeakObjectPtr<ADCInteractableObject> LastInteractedObject = nullptr;
 
 	float DistanceTravelled = 0.0f;

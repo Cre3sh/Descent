@@ -3,9 +3,11 @@
 #pragma once
 
 #include <GameFramework/Actor.h>
+#include <GameplayTagContainer.h>
 
 #include "DCInteractableObject.generated.h"
 
+struct FGameplayTag;
 class ADCPlayerCharacter;
 
 UCLASS()
@@ -21,6 +23,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
+
+	FGameplayTag GetInteractionObjectTag() const;
 	
 	virtual void Interact(ADCPlayerCharacter* InteractingCharacter);
 
@@ -30,6 +34,10 @@ public:
 
 	bool IsBeingInteracted() const;
 
+protected:
+	UPROPERTY(EditDefaultsOnly, Category = "Tags")
+	FGameplayTag InteractionObjectTag = FGameplayTag::EmptyTag;
+	
 private:
 	UPROPERTY(Replicated)
 	bool bIsBeingInteracted = false;

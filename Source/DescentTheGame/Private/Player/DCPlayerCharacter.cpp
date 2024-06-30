@@ -33,8 +33,6 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
-	bReplicates = true;
-
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
 	PlayerCamera->SetupAttachment(RootComponent);
 	PlayerCamera->SetRelativeLocation(FVector(0, 0, 40));
@@ -96,6 +94,7 @@ void ADCPlayerCharacter::BeginPlay()
 
 	PlayerInfoWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	PlayerInfoWidgetComponent->AddRelativeLocation(FVector(0, 0, 100.0f));
+
 	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	// Set up local player info
@@ -108,6 +107,10 @@ void ADCPlayerCharacter::BeginPlay()
 		FText PlayerName = GameInstance->LocalPlayerName;
 
 		Server_SetPlayerName(PlayerName);
+
+		check(PlayerInfoWidgetComponent);
+
+		PlayerInfoWidgetComponent->SetVisibility(false);
 	}
 
 	/*Make it so the flashlight follows the camera's rotation*/
@@ -156,8 +159,47 @@ void ADCPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	Params.bIsPushBased = true;
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, CustomPlayerName, Params);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, LastInteractedObject, Params);
 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+void ADCPlayerCharacter::StartedInteractingWithObject(const FGameplayTag& GameplayTag) const
+{
+	// TODO change this to use a delegate
+
+	check(PlayerInfoWidgetComponent);
+
+	UDCUIPlayerInfoWidget* const PlayerInfoWidget = Cast<UDCUIPlayerInfoWidget>(PlayerInfoWidgetComponent->GetWidget());
+	if (!IsValid(PlayerInfoWidget))
+	{
+		return;
+	}
+
+	PlayerInfoWidget->PlayerStartedInteraction(GameplayTag);
+}
+
+void ADCPlayerCharacter::StoppedInteractingWithObject()
+{
+	// TODO change this to use a delegate
+
+	check(PlayerInfoWidgetComponent);
+
+	UDCUIPlayerInfoWidget* const PlayerInfoWidget = Cast<UDCUIPlayerInfoWidget>(PlayerInfoWidgetComponent->GetWidget());
+	if (!IsValid(PlayerInfoWidget))
+	{
+		return;
+	}
+	
+	LastInteractedObject = nullptr;
+	PlayerInfoWidget->PlayerStoppedInteraction();
+}
+
+void ADCPlayerCharacter::SetLastInteractedObject(ADCInteractableObject* InteractableObject)
+{
+	LastInteractedObject = InteractableObject;
+
+	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, LastInteractedObject, this);
 }
 
 ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
@@ -310,6 +352,19 @@ void ADCPlayerCharacter::LoadSoundFiles()
 	}
 
 	BaseLoader.RequestAsyncLoad(AudioSoftObjectPaths);
+}
+
+void ADCPlayerCharacter::OnRep_LastInteractedObject()
+{
+	const ADCInteractableObject* const InteractableObject = LastInteractedObject.Get();
+	if (IsValid(InteractableObject))
+	{
+		StartedInteractingWithObject(InteractableObject->GetInteractionObjectTag());
+	}
+	else
+	{
+		StoppedInteractingWithObject();
+	}
 }
 
 void ADCPlayerCharacter::OnRep_CustomPlayerName()
@@ -496,8 +551,6 @@ void ADCPlayerCharacter::InteractCheck()
 		if (IsValid(InteractableObject))
 		{
 			InteractableObject->Interact(this);
-
-			LastInteractedObject = InteractableObject;
 		}
 	}
 }

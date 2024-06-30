@@ -5,6 +5,8 @@
 #include <Net/UnrealNetwork.h>
 #include <Net/Core/PushModel/PushModel.h>
 
+#include "Player/DCPlayerCharacter.h"
+
 // Sets default values
 ADCInteractableObject::ADCInteractableObject()
 {
@@ -38,6 +40,12 @@ void ADCInteractableObject::SetIsBeingInteracted(const bool bIsInteracted)
 
 	if (!bIsInteracted)
 	{
+		ADCPlayerCharacter* const PlayerCharacter = GetOwner<ADCPlayerCharacter>();
+		if (IsValid(PlayerCharacter))
+		{
+			PlayerCharacter->StoppedInteractingWithObject();
+		}
+	
 		SetOwner(nullptr);
 	}
 
@@ -59,4 +67,9 @@ void ADCInteractableObject::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME_WITH_PARAMS_FAST(ADCInteractableObject, bIsBeingInteracted, Params);
 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+FGameplayTag ADCInteractableObject::GetInteractionObjectTag() const
+{
+	return InteractionObjectTag;
 }
