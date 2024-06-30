@@ -22,8 +22,6 @@ void ADCPlayerController::OnPossess(APawn* InPawn)
 		return;
 	}
 
-	GameMode->OnPlayerJoined(this);
-
 	VoipTalkerComponent = Cast<UVOIPTalker>(AddComponentByClass(UVOIPTalker::StaticClass(), false, FTransform::Identity, false));
 
 	check(VoipTalkerComponent);

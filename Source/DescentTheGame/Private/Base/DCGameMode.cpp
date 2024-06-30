@@ -6,8 +6,5 @@ void ADCGameMode::OnPlayerJoined(AController* NewPlayer)
 {
 	check(NewPlayer);
 
-	if (OnPlayerJoinedGame.IsBound())
-	{
-		OnPlayerJoinedGame.Broadcast(NewPlayer->PlayerState);
-	}
+	
 }

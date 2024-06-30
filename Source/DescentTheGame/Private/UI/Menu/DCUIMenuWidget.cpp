@@ -16,6 +16,10 @@ void UDCUIMenuWidget::NativeConstruct()
 
 	check(EditablePlayerNameText);
 
+	EditablePlayerNameText->OnTextChanged.AddDynamic(this, &UDCUIMenuWidget::OnPlayerNameChanged);
+
+	Super::NativeDestruct();
+
 	FBPUniqueNetId UniqueNetID;
 	UAdvancedSessionsLibrary::GetUniqueNetID(Cast<APlayerController>(GetOwningPlayer()), UniqueNetID);
 
@@ -57,12 +61,6 @@ void UDCUIMenuWidget::NativeDestruct()
 			PlayerController->SetShowMouseCursor(false);
 		}
 	}
-
-	check(EditablePlayerNameText);
-
-	EditablePlayerNameText->OnTextChanged.AddDynamic(this, &UDCUIMenuWidget::OnPlayerNameChanged);
-
-	Super::NativeDestruct();
 }
 
 void UDCUIMenuWidget::OnPlayerNameChanged(const FText& Text)

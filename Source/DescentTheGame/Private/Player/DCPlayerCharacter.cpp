@@ -43,6 +43,7 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	MinimapSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Minimap Spring Arm"));
 
 	PlayerInfoWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerInfoWidget"));
+	PlayerInfoWidgetComponent->SetupAttachment(RootComponent);
 
 	SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Scene Capture Camera"));
 	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
@@ -61,7 +62,7 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 void ADCPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	APlayerController* const PlayerController = GetController<APlayerController>();
 	if (!IsValid(PlayerController))
 	{
@@ -90,6 +91,13 @@ void ADCPlayerCharacter::BeginPlay()
 		}
 	}
 
+	check(PlayerInfoWidgetComponent);
+	check(FootstepAudioComponent);
+
+	PlayerInfoWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	PlayerInfoWidgetComponent->AddRelativeLocation(FVector(0, 0, 100.0f));
+	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
 	// Set up local player info
 	if (IsLocallyControlled())
 	{
@@ -101,13 +109,6 @@ void ADCPlayerCharacter::BeginPlay()
 
 		Server_SetPlayerName(PlayerName);
 	}
-
-	check(PlayerInfoWidgetComponent);
-	check(FootstepAudioComponent);
-
-	PlayerInfoWidgetComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	PlayerInfoWidgetComponent->AddRelativeLocation(FVector(0, 0, 100.0f));
-	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
 	/*Make it so the flashlight follows the camera's rotation*/
 
@@ -177,6 +178,9 @@ UDCUISceneManager* ADCPlayerCharacter::GetSceneManager() const
 void ADCPlayerCharacter::Server_SetPlayerName_Implementation(const FText& PlayerName)
 {
 	CustomPlayerName = PlayerName;
+
+	// Need to set the player info straight away for the host
+	SetPlayerInfoName();
 
 	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, CustomPlayerName, this);
 }
@@ -316,7 +320,7 @@ void ADCPlayerCharacter::OnRep_CustomPlayerName()
 
 	if (!IsValid(PlayerInfoWidget))
 	{
-		// Probably best not to rely on a hard coded value of time so DO NOT do this
+		//todo Probably best not to rely on a hard coded value of time so DO NOT do this. No time now though so will leave it
 		GetWorld()->GetTimerManager().SetTimer(WidgetRetryConstruction, this, &ADCPlayerCharacter::SetPlayerInfoName, 1.0f);
 		return;
 	}

@@ -19,8 +19,8 @@ void UDCUIPlayerInfoWidget::SetTrackedPlayer(const FText& PlayerName)
 	if (!OwningPlayerController->IsLocalPlayerController())
 	{
 		SetVisibility(ESlateVisibility::Collapsed);
-		return;
 	}
 
 	PlayerNameText->SetText(PlayerName);
+	UE_LOG(LogTemp, Warning, TEXT("Name %s"), *PlayerName.ToString());
 }
