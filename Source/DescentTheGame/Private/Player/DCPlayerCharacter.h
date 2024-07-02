@@ -7,6 +7,7 @@
 
 #include "DCPlayerCharacter.generated.h"
 
+class UDCPickupManagerComponent;
 struct FGameplayTag;
 class UWidgetComponent;
 struct FInputActionValue;
@@ -53,13 +54,15 @@ public:
 
 	void SetLastInteractedObject(ADCInteractableObject* InteractableObject);
 
-	ADCInteractableObject* GetLastInteractedObject() const;
-
 	void KillPlayer(ADCPlayerCharacter* PlayerCharacter) const;
 
 	UMediaSoundComponent* GetMediaSoundComponent() const;
 
 	UDCUISceneManager* GetSceneManager() const;
+
+	ADCInteractableObject* GetLastInteractedObject() const;
+
+	UDCPickupManagerComponent* GetPickupManagerComponent() const;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -127,8 +130,8 @@ private:
 	// Called at game start
 	void LoadSoundFiles();
 
-	/*Player interaction raycast range*/
-	float Reach = 100.f;
+	/*Player interaction range*/
+	float Reach = 200.f;
 
 	/*Used for the parameter in the make noise function*/
 	float PlayerLoudness = 0.25f;
@@ -176,6 +179,9 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Minimap")
 	TObjectPtr<USceneCaptureComponent2D> SceneCaptureComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Pickups")
+	TObjectPtr<UDCPickupManagerComponent> PickupManagerComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<UAudioComponent> FootstepAudioComponent = nullptr;

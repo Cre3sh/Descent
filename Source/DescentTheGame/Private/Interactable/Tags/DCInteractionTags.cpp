@@ -2,4 +2,6 @@
 
 #include "Interactable/Tags/DCInteractionTags.h"
 
+// Objects
 UE_DEFINE_GAMEPLAY_TAG(Tag_Interaction_Object_CommandTablet, "Interaction.Object.CommandTablet");
+UE_DEFINE_GAMEPLAY_TAG(Tag_Interaction_Object_RadarPickup, "Interaction.Object.RadarPickup");

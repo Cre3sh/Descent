@@ -10,27 +10,24 @@ ADCFlickeringLight::ADCFlickeringLight()
 	PrimaryActorTick.bCanEverTick = false;
 
 	LightStaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
-	check(LightStaticMeshComponent);
-
-	SetRootComponent(LightStaticMeshComponent);
 
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("Point Light"));
 
 	check(PointLightComponent);
 
-	PointLightComponent->SetupAttachment(LightStaticMeshComponent);
+	PointLightComponent->SetupAttachment(RootComponent);
 
 	FlickerAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Flicker Audio"));
 
 	check(FlickerAudioComponent);
 
-	FlickerAudioComponent->SetupAttachment(LightStaticMeshComponent);
+	FlickerAudioComponent->SetupAttachment(RootComponent);
 
 	BuzzAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Buzz Audio"));
 
 	check(BuzzAudioComponent);
 
-	BuzzAudioComponent->SetupAttachment(LightStaticMeshComponent);
+	BuzzAudioComponent->SetupAttachment(RootComponent);
 }
 
 void ADCFlickeringLight::BeginPlay()
@@ -38,8 +35,14 @@ void ADCFlickeringLight::BeginPlay()
 	Super::BeginPlay();
 
 	check(PointLightComponent);
+	check(BuzzAudioComponent);
+	check(FlickerAudioComponent);
 
 	PointLightComponent->SetVisibility(false);
+	PointLightComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	BuzzAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+	FlickerAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 }
 
 void ADCFlickeringLight::SetFlickerActive(const bool bShouldFlicker)

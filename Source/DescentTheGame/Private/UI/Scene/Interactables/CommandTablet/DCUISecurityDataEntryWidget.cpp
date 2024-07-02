@@ -66,12 +66,13 @@ FReply UDCUISecurityDataEntryWidget::NativeOnKeyDown(const FGeometry& InGeometry
 
 		if (EntryWidget->OnPlayerPressedDirection(PressedDirection))
 		{
-			// We win
-			if (CurrentEntryIndex)
-			{
-				
-			}
 			CurrentEntryIndex++;
+
+			// We win
+			if (CurrentEntryIndex > ArrowEntries.Num() - 1)
+			{
+				CompletePuzzle();
+			}
 		}
 		else
 		{
@@ -114,4 +115,12 @@ void UDCUISecurityDataEntryWidget::ResetPuzzle()
 
 	bIsResettingPuzzle = false;
 	CurrentEntryIndex = 0;
+}
+
+void UDCUISecurityDataEntryWidget::CompletePuzzle()
+{
+	if (OnPuzzleCompleted.IsBound())
+	{
+		OnPuzzleCompleted.Broadcast();
+	}
 }

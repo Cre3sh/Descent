@@ -7,6 +7,7 @@
 #include "UI/Systems/DCUISceneWidget.h"
 #include "DCUICommandTabletScene.generated.h"
 
+class ADCCommandTablet;
 class UMediaSource;
 class UMediaPlayer;
 class UWidgetSwitcher;
@@ -20,12 +21,15 @@ class UDCUICommandTabletScene : public UDCUISceneWidget
 public:
 	// Begin UUserWidget override
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	// End UUserWidget override
 
 	// Begin UDCUISceneWidget override
 	virtual void CloseScene() override;
 	virtual void OnSceneOpened() override;
 	// End UDCUISceneWidget override
+
+	void SetTablet(ADCCommandTablet* CommandTablet);
 
 protected:
 	UFUNCTION()
@@ -39,6 +43,9 @@ protected:
 
 	UFUNCTION()
 	void OnVideoFinished();
+
+	UFUNCTION()
+	void OnPuzzleComplete();
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UImage> BootUpVideoImage = nullptr;
@@ -58,4 +65,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UButton> SecurityButton = nullptr;
+
+private:
+	TWeakObjectPtr<ADCCommandTablet> WeakTablet = nullptr;
 };

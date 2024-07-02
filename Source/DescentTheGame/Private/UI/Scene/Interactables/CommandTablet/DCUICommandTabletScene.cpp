@@ -6,6 +6,7 @@
 #include <Components/WidgetSwitcher.h>
 #include <MediaPlayer.h>
 
+#include "DCUISecurityDataEntryWidget.h"
 #include "Interactable/DCCommandTablet.h"
 #include "Player/DCPlayerCharacter.h"
 
@@ -15,9 +16,27 @@ void UDCUICommandTabletScene::NativeConstruct()
 
 	check(EnvironmentButton);
 	check(SecurityButton);
+	check(ScreenSwitcher);
 
 	EnvironmentButton->OnClicked.AddDynamic(this, &UDCUICommandTabletScene::OnEnvironmentButtonPressed);
 	SecurityButton->OnClicked.AddDynamic(this, &UDCUICommandTabletScene::OnSecurityButtonPressed);
+
+	UDCUISecurityDataEntryWidget* const SecurityDataEntryWidget = Cast<UDCUISecurityDataEntryWidget>(ScreenSwitcher->GetWidgetAtIndex(1));
+
+	check(SecurityDataEntryWidget);
+
+	SecurityDataEntryWidget->OnPuzzleCompleted.AddDynamic(this, &UDCUICommandTabletScene::OnPuzzleComplete);
+}
+
+void UDCUICommandTabletScene::NativeDestruct()
+{
+	Super::NativeDestruct();
+
+	UDCUISecurityDataEntryWidget* const SecurityDataEntryWidget = Cast<UDCUISecurityDataEntryWidget>(ScreenSwitcher->GetWidgetAtIndex(1));
+
+	check(SecurityDataEntryWidget);
+
+	SecurityDataEntryWidget->OnPuzzleCompleted.RemoveAll(this);
 }
 
 void UDCUICommandTabletScene::CloseScene()
@@ -68,6 +87,11 @@ void UDCUICommandTabletScene::OnSceneOpened()
 	MediaPlayer->OnEndReached.AddDynamic(this, &UDCUICommandTabletScene::OnVideoFinished);
 }
 
+void UDCUICommandTabletScene::SetTablet(ADCCommandTablet* CommandTablet)
+{
+	WeakTablet = CommandTablet;
+}
+
 void UDCUICommandTabletScene::OnEnvironmentButtonPressed()
 {
 	check(ScreenSwitcher);
@@ -105,7 +129,12 @@ void UDCUICommandTabletScene::OnVideoFinished()
 	BootUpVideoImage->SetVisibility(ESlateVisibility::Collapsed);
 	ScreenSwitcher->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 
-	// Why is anything with input just so.. ugh
+	// Why is anything with input just so... ugh
 	SetFocus();
 	SetKeyboardFocus();
+}
+
+void UDCUICommandTabletScene::OnPuzzleComplete()
+{
+	UE_LOG(LogTemp, Error, TEXT("PUZZLE HAS ZA COMPLETIONS"));
 }

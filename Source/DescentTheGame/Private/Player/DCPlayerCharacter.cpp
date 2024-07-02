@@ -20,6 +20,7 @@
 #include <Components/WidgetComponent.h>
 #include <Net/UnrealNetwork.h>
 
+#include "DCPickupManagerComponent.h"
 #include "Base/DCAdvancedGameInstance.h"
 #include "Interactable/DCInteractableObject.h"
 #include "Net/Core/PushModel/PushModel.h"
@@ -45,6 +46,9 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 
 	SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Scene Capture Camera"));
 	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
+
+	PickupManagerComponent = CreateDefaultSubobject<UDCPickupManagerComponent>(TEXT("Pickup manager component"));
+
 	ApparitionDeathSound = CreateDefaultSubobject<UMediaSoundComponent>(TEXT("Apparition Death Sound"));
 
 	FootstepAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Foot Step Audio Component"));
@@ -205,6 +209,11 @@ void ADCPlayerCharacter::SetLastInteractedObject(ADCInteractableObject* Interact
 ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
 {
 	return LastInteractedObject.Get();
+}
+
+UDCPickupManagerComponent* ADCPlayerCharacter::GetPickupManagerComponent() const
+{
+	return PickupManagerComponent;
 }
 
 UMediaSoundComponent* ADCPlayerCharacter::GetMediaSoundComponent() const

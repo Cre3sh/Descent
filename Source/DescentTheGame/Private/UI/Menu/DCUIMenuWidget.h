@@ -6,8 +6,8 @@
 
 #include "DCUIMenuWidget.generated.h"
 
+class UDCUIMenuElementButton;
 class UEditableText;
-class UButton;
 
 UCLASS()
 class UDCUIMenuWidget : public UUserWidget
@@ -22,11 +22,14 @@ public:
 	// End UUserWidget override
 
 protected:
-	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
-	TObjectPtr<UButton> HostButton = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	TObjectPtr<UDCUIMenuElementButton> HostButton = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
-	TObjectPtr<UButton> JoinButton = nullptr;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	TObjectPtr<UDCUIMenuElementButton> JoinButton = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	TObjectPtr<UDCUIMenuElementButton> QuitButton = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UEditableText> EditablePlayerNameText = nullptr;
@@ -34,4 +37,7 @@ protected:
 private:
 	UFUNCTION()
 	void OnPlayerNameChanged(const FText& Text);
+
+	UFUNCTION()
+	void OnQuitButtonPressed();
 };

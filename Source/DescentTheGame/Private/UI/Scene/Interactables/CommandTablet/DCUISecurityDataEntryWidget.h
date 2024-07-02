@@ -6,6 +6,8 @@
 
 #include "DCUISecurityDataEntryWidget.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCUIOnPuzzleCompleted);
+
 class UDynamicEntryBox;
 
 UCLASS()
@@ -19,6 +21,8 @@ public:
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 	// End UUserWidget override
 
+	FDCUIOnPuzzleCompleted OnPuzzleCompleted;
+
 protected:
 	UPROPERTY(Transient, EditDefaultsOnly, meta=(BindWidgetAnim))
 	TObjectPtr<UWidgetAnimation> OnEntriesSetAnimation = nullptr;
@@ -28,6 +32,8 @@ protected:
 
 private:
 	void ResetPuzzle();
+
+	void CompletePuzzle();
 
 	uint8 CurrentEntryIndex = 0;
 
