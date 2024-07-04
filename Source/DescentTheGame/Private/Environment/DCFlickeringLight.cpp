@@ -38,9 +38,6 @@ void ADCFlickeringLight::BeginPlay()
 	check(BuzzAudioComponent);
 	check(FlickerAudioComponent);
 
-	PointLightComponent->SetVisibility(false);
-	PointLightComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-
 	BuzzAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	FlickerAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 }

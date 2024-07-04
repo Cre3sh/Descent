@@ -7,10 +7,6 @@
 
 #include "ApparitionAIController.generated.h"
 
-/*Will need to rework the way this controller works to not use behavior trees and instead handle everything via code,
- *Behavior trees are an excellent way to visualise AI logic and behavior but they are not scalable and require too much prerequisite setup
- *for little gain*/
-
 UCLASS()
 class DESCENTTHEGAME_API AApparitionAIController : public AAIController
 {
