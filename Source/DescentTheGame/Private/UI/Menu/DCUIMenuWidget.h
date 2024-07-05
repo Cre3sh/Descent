@@ -2,15 +2,16 @@
 
 #pragma once
 
-#include <Blueprint/UserWidget.h>
+#include "UI/Systems/DCUISceneWidget.h"
 
 #include "DCUIMenuWidget.generated.h"
 
+class UWidgetSwitcher;
 class UDCUIMenuElementButton;
 class UEditableText;
 
 UCLASS()
-class UDCUIMenuWidget : public UUserWidget
+class UDCUIMenuWidget : public UDCUISceneWidget
 {
 	GENERATED_BODY()
 
@@ -29,10 +30,16 @@ protected:
 	TObjectPtr<UDCUIMenuElementButton> JoinButton = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
+	TObjectPtr<UDCUIMenuElementButton> OptionsButton = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(BindWidget))
 	TObjectPtr<UDCUIMenuElementButton> QuitButton = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UEditableText> EditablePlayerNameText = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
+	TObjectPtr<UWidgetSwitcher> ScreenSwitcher = nullptr;
 
 private:
 	UFUNCTION()

@@ -2,12 +2,11 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include <Components/ActorComponent.h>
+
 #include "DCTerrorRadiusComponent.generated.h"
 
-
-UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
 class UDCTerrorRadiusComponent : public UActorComponent
 {
 	GENERATED_BODY()
@@ -15,14 +14,26 @@ class UDCTerrorRadiusComponent : public UActorComponent
 public:	
 	// Sets default values for this component's properties
 	UDCTerrorRadiusComponent();
+	
+	// Begin AActor override
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	// End AActor override
 
 protected:
-	// Called when the game starts
-	virtual void BeginPlay() override;
+	UPROPERTY(EditAnywhere)
+	TObjectPtr<USoundBase> TerrorAudio = nullptr;
 
-public:	
-	// Called every frame
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+private:
+	UFUNCTION()
+	void OnAudioFinished();
+	
+	void CheckForNearbyPlayers();
 
-		
+	UPROPERTY()
+	TObjectPtr<UAudioComponent> AudioComponent = nullptr;
+
+	FTimerHandle CheckPlayerHandle;
+
+	bool bIsPlaying = false;
 };

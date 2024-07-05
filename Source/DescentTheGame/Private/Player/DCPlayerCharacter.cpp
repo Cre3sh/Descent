@@ -21,6 +21,7 @@
 #include <Net/UnrealNetwork.h>
 
 #include "DCPickupManagerComponent.h"
+#include "Audio/DCTerrorRadiusComponent.h"
 #include "Base/DCAdvancedGameInstance.h"
 #include "Interactable/DCInteractableObject.h"
 #include "Net/Core/PushModel/PushModel.h"
@@ -48,6 +49,7 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
 
 	PickupManagerComponent = CreateDefaultSubobject<UDCPickupManagerComponent>(TEXT("Pickup manager component"));
+	TerrorComponent = CreateDefaultSubobject<UDCTerrorRadiusComponent>(TEXT("Terror Component"));
 
 	ApparitionDeathSound = CreateDefaultSubobject<UMediaSoundComponent>(TEXT("Apparition Death Sound"));
 

@@ -7,6 +7,7 @@
 
 #include "DCPlayerCharacter.generated.h"
 
+class UDCTerrorRadiusComponent;
 class UDCPickupManagerComponent;
 struct FGameplayTag;
 class UWidgetComponent;
@@ -182,6 +183,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pickups")
 	TObjectPtr<UDCPickupManagerComponent> PickupManagerComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<UDCTerrorRadiusComponent> TerrorComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<UAudioComponent> FootstepAudioComponent = nullptr;

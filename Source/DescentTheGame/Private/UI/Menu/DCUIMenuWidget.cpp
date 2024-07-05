@@ -18,6 +18,7 @@ void UDCUIMenuWidget::NativeConstruct()
 
 	check(HostButton);
 	check(JoinButton);
+	check(OptionsButton);
 	check(QuitButton)
 	check(EditablePlayerNameText);
 
@@ -58,6 +59,7 @@ void UDCUIMenuWidget::NativeConstruct()
 
 	HostButton->SetButtonText(FText::FromString("Host"));
 	JoinButton->SetButtonText(FText::FromString("Join"));
+	OptionsButton->SetButtonText(FText::FromString("Options"));
 	QuitButton->SetButtonText(FText::FromString("Quit"));
 
 	// Can assume here we have a valid button otherwise game would have crashed already
