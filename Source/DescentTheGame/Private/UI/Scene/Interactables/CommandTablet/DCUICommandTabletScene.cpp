@@ -136,5 +136,11 @@ void UDCUICommandTabletScene::OnVideoFinished()
 
 void UDCUICommandTabletScene::OnPuzzleComplete()
 {
-	UE_LOG(LogTemp, Error, TEXT("PUZZLE HAS ZA COMPLETIONS"));
+	ADCCommandTablet* const CommandTablet = WeakTablet.Get();
+	if (!IsValid(CommandTablet))
+	{
+		return;
+	}
+
+	CommandTablet->OnPuzzleComplete();
 }

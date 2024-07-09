@@ -7,6 +7,7 @@
 #include "UI/Systems/DCUISceneWidget.h"
 #include "DCUICommandTabletScene.generated.h"
 
+class ADCCryogenicChamber;
 class ADCCommandTablet;
 class UMediaSource;
 class UMediaPlayer;
@@ -65,6 +66,12 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UButton> SecurityButton = nullptr;
+
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bHasCryogenicControls"))
+	TObjectPtr<ADCCryogenicChamber> ControlledCryogenicChamber = nullptr;
+	
+	UPROPERTY(EditAnywhere)
+	bool bHasCryogenicControls = false;
 
 private:
 	TWeakObjectPtr<ADCCommandTablet> WeakTablet = nullptr;

@@ -2,7 +2,9 @@
 
 #include "Interactable/DCCommandTablet.h"
 
+#include "Environment/DCSlidingDoor.h"
 #include "Player/DCPlayerCharacter.h"
+#include "UI/Scene/Interactables/CommandTablet/DCUICommandTabletScene.h"
 #include "UI/Systems/DCUISceneManager.h"
 #include "UI/Tags/DCSceneTags.h"
 
@@ -39,5 +41,32 @@ void ADCCommandTablet::Interact(ADCPlayerCharacter* InteractingCharacter)
 
 	check(SceneManager);
 
-	SceneManager->OpenScene(InteractingCharacter, Tag_UI_Scene_CommandTablet);
+	UDCUICommandTabletScene* const CommandTabletScene = Cast<UDCUICommandTabletScene>(SceneManager->OpenScene(InteractingCharacter, Tag_UI_Scene_CommandTablet));
+	if (!IsValid(CommandTabletScene))
+	{
+		return;
+	}
+
+	CommandTabletScene->SetTablet(this);
+}
+
+void ADCCommandTablet::BeginPlay()
+{
+	Super::BeginPlay();
+
+	if (IsValid(OperatedDoor))
+	{
+		OperatedDoor->SetOwner(this);
+	}
+}
+
+void ADCCommandTablet::OnPuzzleComplete() const
+{
+	ADCSlidingDoor* const SlidingDoor = OperatedDoor.Get();
+	if (!IsValid(SlidingDoor))
+	{
+		return;
+	}
+
+	SlidingDoor->UnlockDoor();
 }

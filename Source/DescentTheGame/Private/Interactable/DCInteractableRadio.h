@@ -2,19 +2,17 @@
 
 #pragma once
 
-#include <Interactable/DCInteractableObject.h>
+#include "Interactable/DCInteractableObject.h"
 
-#include "DCCommandTablet.generated.h"
-
-class ADCSlidingDoor;
+#include "DCInteractableRadio.generated.h"
 
 UCLASS()
-class ADCCommandTablet : public ADCInteractableObject
+class ADCInteractableRadio : public ADCInteractableObject
 {
 	GENERATED_BODY()
 
 public:
-	ADCCommandTablet();
+	ADCInteractableRadio();
 
 	// Begin ADCInteractableObject override
 	virtual void Interact(ADCPlayerCharacter* InteractingCharacter) override;
@@ -24,12 +22,13 @@ public:
 	virtual void BeginPlay() override;
 	// End AActor override
 
-	void OnPuzzleComplete() const;
+protected:
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UStaticMeshComponent> StaticMeshComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAudioComponent> AudioComponent = nullptr;
 
 private:
-	UPROPERTY(EditDefaultsOnly)
-	TObjectPtr<UStaticMeshComponent> TabletStaticMeshComponent = nullptr;
-
-	UPROPERTY(EditAnywhere)
-	TObjectPtr<ADCSlidingDoor> OperatedDoor = nullptr;
+	bool bShouldBeActive = true;
 };

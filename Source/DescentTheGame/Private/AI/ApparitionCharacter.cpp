@@ -152,7 +152,7 @@ void AApparitionCharacter::OnPawnDetecionBeginOverlap(UPrimitiveComponent* Overl
 
 	FootStepSoundComponent->Stop();
 
-	PlayerCharacter->KillPlayer(PlayerCharacter);
+	PlayerCharacter->OnPlayerCaught();
 }
 
 void AApparitionCharacter::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

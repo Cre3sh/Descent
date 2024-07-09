@@ -9,6 +9,7 @@
 
 #include "DCUISceneManager.generated.h"
 
+class UDCUISceneWidget;
 class UCanvasPanel;
 struct FGameplayTag;
 class ADCPlayerCharacter;
@@ -24,7 +25,7 @@ public:
 	// End UUserWidget override
 
 	// Opens a scene for the specified player character
-	void OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag);
+	UDCUISceneWidget* OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag);
 
 	// Returns an existing scene from the specified gameplay tag
 	UUserWidget* GetSceneByTag(FGameplayTag InSceneTag) const;
@@ -39,7 +40,7 @@ private:
 	TObjectPtr<UDCSceneData> ScenesData = nullptr;
 
 	UPROPERTY(Transient)
-	TMap<FGameplayTag, TObjectPtr<UUserWidget>> ExistingScenes = {};
+	TMap<FGameplayTag, TObjectPtr<UDCUISceneWidget>> ExistingScenes = {};
 
 	FGameplayTag OpenedSceneTag = FGameplayTag::EmptyTag;
 	

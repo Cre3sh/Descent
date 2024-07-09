@@ -7,6 +7,8 @@
 
 #include "DCPlayerCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnPlayerDied);
+
 class UDCTerrorRadiusComponent;
 class UDCPickupManagerComponent;
 struct FGameplayTag;
@@ -47,6 +49,8 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
 
+	ACameraActor* GetSpectatorCamera();
+
 	void StartedInteractingWithObject(const FGameplayTag& GameplayTag) const;
 
 	// Currently interactions only support one at a time, so we don't need to pass in a tag
@@ -55,7 +59,7 @@ public:
 
 	void SetLastInteractedObject(ADCInteractableObject* InteractableObject);
 
-	void KillPlayer(ADCPlayerCharacter* PlayerCharacter) const;
+	void OnPlayerCaught();
 
 	UMediaSoundComponent* GetMediaSoundComponent() const;
 
@@ -64,6 +68,8 @@ public:
 	ADCInteractableObject* GetLastInteractedObject() const;
 
 	UDCPickupManagerComponent* GetPickupManagerComponent() const;
+	
+	FDCOnPlayerDied OnPlayerDied;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -174,6 +180,12 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TObjectPtr<UCameraComponent> PlayerCamera = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	TObjectPtr<ACameraActor> SpectatorCameraActor = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	TObjectPtr<USceneComponent> SpectatorCameraHolder = nullptr;
 
 	UPROPERTY(VisibleAnywhere, Category = "Minimap")
 	TObjectPtr<USpringArmComponent> MinimapSpringArmComponent = nullptr;

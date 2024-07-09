@@ -6,6 +6,10 @@
 
 #include "DCGameMode.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDCOnLevelsLoaded, UDCRoomGenerationData*, RoomGenerationData);
+
+class UDCRoomGenerationData;
+
 UCLASS()
 class ADCGameMode : public AGameMode
 {
@@ -13,6 +17,25 @@ class ADCGameMode : public AGameMode
 
 public:
 	// Begin AGameModeBase override
-	void OnPlayerJoined(AController* NewPlayer);
+	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
+	virtual void OnPostLogin(AController* NewPlayer) override;
+	virtual bool ShouldSpawnAtStartSpot(AController* Player) override;
 	// End AGameModeBase override
+
+private:
+	UFUNCTION()
+	void OnLevelLoaded();
+
+	void AsyncLoadLevels();
+	
+	void OnLevelsLoaded();
+
+	void RestartAllPlayers();
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UDCRoomGenerationData> LevelInstancesData = nullptr;
+
+	TArray<TWeakObjectPtr<AController>> PendingPlayers;
+
+	FTimerHandle PlayerSpawnHandle;
 };

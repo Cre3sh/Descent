@@ -5,6 +5,7 @@
 #include <Components/Button.h>
 #include <Components/EditableText.h>
 #include <Kismet/KismetSystemLibrary.h>
+#include <GameFramework/GameUserSettings.h>
 
 #include <AdvancedSteamFriendsLibrary.h>
 #include <AdvancedSessionsLibrary.h>
@@ -32,7 +33,7 @@ void UDCUIMenuWidget::NativeConstruct()
 	FText PlayerNameText = FText::FromString(UAdvancedSteamFriendsLibrary::GetSteamPersonaName(UniqueNetID));
 
 	if (!PlayerNameText.IsEmpty())
-	{
+	{	
 		EditablePlayerNameText->SetText(PlayerNameText);
 
 		UDCAdvancedGameInstance* const GameInstance = GetGameInstance<UDCAdvancedGameInstance>();
@@ -64,6 +65,23 @@ void UDCUIMenuWidget::NativeConstruct()
 
 	// Can assume here we have a valid button otherwise game would have crashed already
 	QuitButton->GetButton()->OnPressed.AddDynamic(this, &UDCUIMenuWidget::OnQuitButtonPressed);
+
+	// TODO remove this once the options menu is implemented
+	UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
+	UserSettings->SetOverallScalabilityLevel(2);
+
+	UserSettings->SetReflectionQuality(2);
+	UserSettings->SetShadingQuality(2);
+	UserSettings->SetFoliageQuality(2);
+	UserSettings->SetShadowQuality(2);
+	UserSettings->SetTextureQuality(2);
+	UserSettings->SetPostProcessingQuality(2);
+	UserSettings->SetAntiAliasingQuality(2);
+	UserSettings->SetGlobalIlluminationQuality(2);
+	UserSettings->SetViewDistanceQuality(2);
+	UserSettings->SetVisualEffectQuality(2);
+
+	UserSettings->ApplySettings(false);
 }
 
 void UDCUIMenuWidget::NativeDestruct()

@@ -19,13 +19,15 @@ class UDCPlayerHUD : public UUserWidget
 public:
 	// Begin UUserWidget override
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	// End UUserWidget override
-
-	void OnPlayerDied();
 
 protected:
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UImage> DeathScreenVideoImage = nullptr;
+	
+	UPROPERTY(Transient, EditDefaultsOnly, meta=(BindWidgetAnim))
+	TObjectPtr<UWidgetAnimation> PlayerDiedAnimation = nullptr;
 
 	// Media Player used to play cutscenes
 	UPROPERTY(EditDefaultsOnly)
@@ -33,4 +35,11 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UMediaSource> DeathSceneMediaSource = nullptr;
+
+private:
+	UFUNCTION()
+	void OnPlayerDied();
+
+	UFUNCTION()
+	void OnJumpscareFinished();
 };

@@ -14,7 +14,6 @@
 #include <Components/SceneCaptureComponent2D.h>
 #include <GameFramework/SpringArmComponent.h>
 #include <Blueprint/UserWidget.h>
-#include <Kismet/GameplayStatics.h>
 #include <EnhancedInputComponent.h>
 #include <EnhancedInputSubsystems.h>
 #include <Components/WidgetComponent.h>
@@ -23,6 +22,7 @@
 #include "DCPickupManagerComponent.h"
 #include "Audio/DCTerrorRadiusComponent.h"
 #include "Base/DCAdvancedGameInstance.h"
+#include "Camera/CameraActor.h"
 #include "Interactable/DCInteractableObject.h"
 #include "Net/Core/PushModel/PushModel.h"
 #include "UI/DCPlayerHUD.h"
@@ -51,6 +51,9 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	PickupManagerComponent = CreateDefaultSubobject<UDCPickupManagerComponent>(TEXT("Pickup manager component"));
 	TerrorComponent = CreateDefaultSubobject<UDCTerrorRadiusComponent>(TEXT("Terror Component"));
 
+	SpectatorCameraHolder = CreateDefaultSubobject<USceneComponent>(TEXT("Spectator Camera Holder"));
+	SpectatorCameraHolder->SetupAttachment(PlayerCamera);
+
 	ApparitionDeathSound = CreateDefaultSubobject<UMediaSoundComponent>(TEXT("Apparition Death Sound"));
 
 	FootstepAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Foot Step Audio Component"));
@@ -68,30 +71,28 @@ void ADCPlayerCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	APlayerController* const PlayerController = GetController<APlayerController>();
-	if (!IsValid(PlayerController))
+	if (IsValid(PlayerController))
 	{
-		return;
-	}
+		UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 
-	UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
+		check(InputSubsystem);
 
-	check(InputSubsystem);
+		// Add Input Mapping Context
+		InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
 
-	// Add Input Mapping Context
-	InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
-
-	if (PlayerController->IsLocalController())
-	{
-		PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
-		if (IsValid(PlayerHUD))
+		if (PlayerController->IsLocalController())
 		{
-			PlayerHUD->AddToViewport();
-		}
+			PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
+			if (IsValid(PlayerHUD))
+			{
+				PlayerHUD->AddToViewport();
+			}
 
-		SceneManager = CreateWidget<UDCUISceneManager>(PlayerController, SceneManagerClass);
-		if (IsValid(SceneManager))
-		{
-			SceneManager->AddToViewport();
+			SceneManager = CreateWidget<UDCUISceneManager>(PlayerController, SceneManagerClass);
+			if (IsValid(SceneManager))
+			{
+				SceneManager->AddToViewport();
+			}
 		}
 	}
 
@@ -102,6 +103,17 @@ void ADCPlayerCharacter::BeginPlay()
 	PlayerInfoWidgetComponent->AddRelativeLocation(FVector(0, 0, 100.0f));
 
 	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
+
+	if (HasAuthority())
+	{
+		SpectatorCameraActor = Cast<ACameraActor>(GetWorld()->SpawnActor(ACameraActor::StaticClass()));
+
+		SpectatorCameraActor->SetOwner(this);
+		SpectatorCameraActor->SetActorLocation(SpectatorCameraHolder->GetComponentLocation());
+		SpectatorCameraActor->SetActorRotation(SpectatorCameraHolder->GetComponentRotation());
+		SpectatorCameraActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		SpectatorCameraActor->SetReplicates(true);
+	}
 
 	// Set up local player info
 	if (IsLocallyControlled())
@@ -127,16 +139,6 @@ void ADCPlayerCharacter::BeginPlay()
 
 	Torch->AttachToComponent(PlayerCamera, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	MinimapSpringArmComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
-
-	// Need to ignore the ceiling on the minimap
-	TArray<AActor*> Actors;
-	UGameplayStatics::GetAllActorsOfClassWithTag(GetWorld(), AActor::StaticClass(), FName("Ceiling"), Actors);
-
-	for (const AActor* const Actor : Actors)
-	{
-		check(Actor);
-		SceneCaptureComponent->HideComponent(Actor->GetComponentByClass<UStaticMeshComponent>());
-	}
 }
 
 // Called every frame
@@ -168,6 +170,11 @@ void ADCPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, LastInteractedObject, Params);
 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+}
+
+ACameraActor* ADCPlayerCharacter::GetSpectatorCamera()
+{
+	return SpectatorCameraActor;
 }
 
 void ADCPlayerCharacter::StartedInteractingWithObject(const FGameplayTag& GameplayTag) const
@@ -243,17 +250,10 @@ void ADCPlayerCharacter::Server_ReportNoise_Implementation()
 	ReportNoise();
 }
 
-void ADCPlayerCharacter::KillPlayer(ADCPlayerCharacter* PlayerCharacter) const
+void ADCPlayerCharacter::OnPlayerCaught()
 {
-	if (!IsValid(PlayerCharacter))
-	{
-		return;
-	}
-
-	if (PlayerCharacter->IsLocallyControlled())
-	{
-		PlayerHUD->OnPlayerDied();
-	}
+	GetCharacterMovement()->DisableMovement();
+	DisableInput(GetController<APlayerController>());
 
 	USkeletalMeshComponent* const SkeletalMeshComponent = GetMesh();
 	
@@ -266,6 +266,11 @@ void ADCPlayerCharacter::KillPlayer(ADCPlayerCharacter* PlayerCharacter) const
 	float RandomY = FMath::RandRange(25000.0f, 100000.0f);
 	float RandomZ = FMath::RandRange(25000.0f, 100000.0f);
 	SkeletalMeshComponent->AddImpulse(FVector(RandomX, RandomY, RandomZ));
+
+	if (OnPlayerDied.IsBound())
+	{
+		OnPlayerDied.Broadcast();
+	}
 }
 
 // Called to bind functionality to input

@@ -10,6 +10,7 @@ ADCFlickeringLight::ADCFlickeringLight()
 	PrimaryActorTick.bCanEverTick = false;
 
 	LightStaticMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Static Mesh"));
+	SetRootComponent(LightStaticMeshComponent);
 
 	PointLightComponent = CreateDefaultSubobject<UPointLightComponent>(TEXT("Point Light"));
 

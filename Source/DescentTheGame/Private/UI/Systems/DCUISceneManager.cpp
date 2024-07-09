@@ -21,7 +21,7 @@ FReply UDCUISceneManager::NativeOnKeyDown(const FGeometry& InGeometry, const FKe
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
-void UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag)
+UDCUISceneWidget* UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag)
 {
 	const UWorld* const World = GetWorld();
 
@@ -38,21 +38,21 @@ void UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplay
 	// Check if this scene has already been constructed
 	if (ExistingScenes.Contains(InSceneTag))
 	{
-		if (OpenedSceneTag == InSceneTag)
-		{
-			return;
-		}
-
 		UDCUISceneWidget* const OpenedScene = Cast<UDCUISceneWidget>(ExistingScenes.FindRef(InSceneTag));
 		if (!IsValid(OpenedScene))
 		{
-			return;
+			return nullptr;
+		}
+
+		if (OpenedSceneTag == InSceneTag)
+		{
+			return OpenedScene;
 		}
 
 		OpenedSceneTag = InSceneTag;
 		OpenedScene->OnSceneOpened();
 
-		return;
+		return OpenedScene;
 	}
 
 	// We haven't created this widget before so create it now
@@ -80,6 +80,8 @@ void UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplay
 
 		NewScene->OnSceneOpened();
 	}
+
+	return NewScene;
 }
 
 UUserWidget* UDCUISceneManager::GetSceneByTag(FGameplayTag InSceneTag) const

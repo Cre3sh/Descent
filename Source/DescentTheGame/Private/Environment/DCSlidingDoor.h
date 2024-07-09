@@ -21,7 +21,12 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
+
+	UFUNCTION(Server, Reliable)
+	void Server_UnlockDoor();
+	void UnlockDoor();
 
 protected:
 	UPROPERTY(EditDefaultsOnly)
@@ -31,6 +36,9 @@ protected:
 	TObjectPtr<UBoxComponent> BoxComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UAudioComponent> AccessAudioComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UAudioComponent> AudioComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
@@ -38,6 +46,9 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<USoundBase> DoorCloseSound = nullptr;
+
+	UPROPERTY(EditAnywhere)
+	bool bShouldStartLocked = false;
 
 	UPROPERTY(EditDefaultsOnly)
 	float DoorOpenZ = 268.0f;
@@ -49,7 +60,12 @@ private:
 	UFUNCTION()
 	void OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
 
+	void OpenDoor();
+	
 	void CheckShouldClose();
+
+	void SetWantsToOpen(bool bInWantsToOpen);
+	void SetWantsToClose(bool bInWantsToClose);
 
 	TArray<TWeakObjectPtr<APawn>> OverlappedWeakPawns;
 
@@ -60,6 +76,12 @@ private:
 
 	FTimerHandle CloseCheckHandle;
 
+	UPROPERTY(Replicated)
+	bool bIsLocked = false;
+
+	UPROPERTY(Replicated)
 	bool bWantsToOpen = false;
+
+	UPROPERTY(Replicated)
 	bool bWantsToClose = false;
 };

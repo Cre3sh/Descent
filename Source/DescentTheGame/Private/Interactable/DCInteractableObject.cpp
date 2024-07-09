@@ -32,12 +32,6 @@ void ADCInteractableObject::Server_SetIsBeingInteracted_Implementation(const boo
 
 void ADCInteractableObject::SetIsBeingInteracted(const bool bIsInteracted)
 {
-	if (!HasAuthority())
-	{
-		Server_SetIsBeingInteracted(bIsInteracted);
-		return;
-	}
-
 	if (!bIsInteracted)
 	{
 		ADCPlayerCharacter* const PlayerCharacter = GetOwner<ADCPlayerCharacter>();
