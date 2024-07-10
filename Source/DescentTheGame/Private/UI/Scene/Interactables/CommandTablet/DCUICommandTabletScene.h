@@ -32,9 +32,14 @@ public:
 
 	void SetTablet(ADCCommandTablet* CommandTablet);
 
+	void SetUseCryogenics(const bool bUseCryogenics, ADCCryogenicChamber* const CryogenicChamber = nullptr);
+
 protected:
 	UFUNCTION()
 	void OnEnvironmentButtonPressed();
+
+	UFUNCTION()
+	void OnCryogenicsButtonPressed();
 
 	UFUNCTION()
 	void OnSecurityButtonPressed();
@@ -44,6 +49,9 @@ protected:
 
 	UFUNCTION()
 	void OnVideoFinished();
+
+	UFUNCTION()
+	void OnCryogenicsActivated();
 
 	UFUNCTION()
 	void OnPuzzleComplete();
@@ -65,14 +73,12 @@ protected:
 	TObjectPtr<UButton> EnvironmentButton = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
+	TObjectPtr<UButton> CryogenicsButton = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UButton> SecurityButton = nullptr;
 
-	UPROPERTY(EditAnywhere, meta=(EditCondition="bHasCryogenicControls"))
-	TObjectPtr<ADCCryogenicChamber> ControlledCryogenicChamber = nullptr;
-	
-	UPROPERTY(EditAnywhere)
-	bool bHasCryogenicControls = false;
-
 private:
+	TWeakObjectPtr<ADCCryogenicChamber> CryogenicChamberWeak = nullptr;
 	TWeakObjectPtr<ADCCommandTablet> WeakTablet = nullptr;
 };

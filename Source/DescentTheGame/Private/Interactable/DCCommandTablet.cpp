@@ -2,6 +2,7 @@
 
 #include "Interactable/DCCommandTablet.h"
 
+#include "Environment/DCCryogenicChamber.h"
 #include "Environment/DCSlidingDoor.h"
 #include "Player/DCPlayerCharacter.h"
 #include "UI/Scene/Interactables/CommandTablet/DCUICommandTabletScene.h"
@@ -48,6 +49,7 @@ void ADCCommandTablet::Interact(ADCPlayerCharacter* InteractingCharacter)
 	}
 
 	CommandTabletScene->SetTablet(this);
+	CommandTabletScene->SetUseCryogenics(bHasCryogenicControls, ControlledCryogenicChamber);
 }
 
 void ADCCommandTablet::BeginPlay()
@@ -57,6 +59,11 @@ void ADCCommandTablet::BeginPlay()
 	if (IsValid(OperatedDoor))
 	{
 		OperatedDoor->SetOwner(this);
+	}
+
+	if (IsValid(ControlledCryogenicChamber))
+	{
+		ControlledCryogenicChamber->SetOwner(this);
 	}
 }
 
@@ -69,4 +76,13 @@ void ADCCommandTablet::OnPuzzleComplete() const
 	}
 
 	SlidingDoor->UnlockDoor();
+}
+
+void ADCCommandTablet::OnCryogenicsActivated() const
+{
+	ADCCryogenicChamber* const CryogenicChamber = ControlledCryogenicChamber.Get();
+
+	check(CryogenicChamber);
+
+	CryogenicChamber->ReviveRandomPlayer();
 }

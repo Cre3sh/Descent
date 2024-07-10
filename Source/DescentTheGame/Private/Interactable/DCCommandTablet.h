@@ -7,6 +7,7 @@
 #include "DCCommandTablet.generated.h"
 
 class ADCSlidingDoor;
+class ADCCryogenicChamber;
 
 UCLASS()
 class ADCCommandTablet : public ADCInteractableObject
@@ -25,6 +26,7 @@ public:
 	// End AActor override
 
 	void OnPuzzleComplete() const;
+	void OnCryogenicsActivated() const;
 
 private:
 	UPROPERTY(EditDefaultsOnly)
@@ -32,4 +34,10 @@ private:
 
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<ADCSlidingDoor> OperatedDoor = nullptr;
+
+	UPROPERTY(EditAnywhere, meta=(EditCondition="bHasCryogenicControls"))
+	TObjectPtr<ADCCryogenicChamber> ControlledCryogenicChamber = nullptr;
+	
+	UPROPERTY(EditAnywhere)
+	bool bHasCryogenicControls = false;
 };
