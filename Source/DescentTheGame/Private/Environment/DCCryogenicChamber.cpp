@@ -6,6 +6,7 @@
 #include <GameFramework/GameModeBase.h>
 #include <GameFramework/GameStateBase.h>
 #include <Kismet/GameplayStatics.h>
+#include <Particles/ParticleSystemComponent.h>
 
 #include "Player/DCPlayerState.h"
 
@@ -14,7 +15,7 @@ ADCCryogenicChamber::ADCCryogenicChamber()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	CryogenicStaticMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("CryogenicMesh"));
 	SetRootComponent(CryogenicStaticMesh);
 
@@ -90,13 +91,21 @@ void ADCCryogenicChamber::BeginRevive()
 
 	UParticleSystemComponent* const ParticleSystemComponent = UGameplayStatics::SpawnEmitterAtLocation(this, SmokeParticleSystem, PlayerHolder->GetComponentLocation(), PlayerHolder->GetComponentRotation(), FVector(5.0f, 5.0f, 5.0f));
 	bIsMoving = true;
+
+	GetWorld()->GetTimerManager().SetTimer(DestroySmokeHandle, FTimerDelegate::CreateWeakLambda(this, [this, ParticleSystemComponent]()
+	{
+		if (IsValid(ParticleSystemComponent))
+		{
+			ParticleSystemComponent->DeactivateSystem();
+		}
+	}), 15.0f, false);
 }
 
 void ADCCryogenicChamber::RevivePlayer()
 {
 	const UWorld* const World = GetWorld();
 	check(World);
-	
+
 	AGameModeBase* const GameModeBase = World->GetAuthGameMode();
 	if (!IsValid(GameModeBase))
 	{
@@ -119,11 +128,11 @@ void ADCCryogenicChamber::RevivePlayer()
 		{
 			FTransform PlayerHolderTransform = PlayerHolder->GetComponentTransform();
 			PlayerHolderTransform.SetScale3D(FVector(1.0f, 1.0f, 1.0f));
+			AController* PlayerController = DCPlayerState->GetOwningController();
 
-			GameModeBase->RestartPlayerAtTransform(DCPlayerState->GetOwningController(), PlayerHolderTransform);
+			GameModeBase->RestartPlayerAtTransform(PlayerController, PlayerHolderTransform);
 
 			break;
 		}
 	}
 }
-

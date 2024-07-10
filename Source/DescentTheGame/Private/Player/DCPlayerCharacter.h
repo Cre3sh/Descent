@@ -7,8 +7,6 @@
 
 #include "DCPlayerCharacter.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnPlayerDied);
-
 class UDCTerrorRadiusComponent;
 class UDCPickupManagerComponent;
 struct FGameplayTag;
@@ -42,6 +40,11 @@ class DESCENTTHEGAME_API ADCPlayerCharacter : public ACharacter
 public:
 	ADCPlayerCharacter();
 
+	// Begin APawn override
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+	// End APawn override
+	
 	// Begin AActor override
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaTime) override;
@@ -61,6 +64,8 @@ public:
 
 	void OnPlayerCaught();
 
+	void SpectatePlayer(ADCPlayerCharacter* PlayerCharacter);
+
 	UMediaSoundComponent* GetMediaSoundComponent() const;
 
 	UDCUISceneManager* GetSceneManager() const;
@@ -68,8 +73,6 @@ public:
 	ADCInteractableObject* GetLastInteractedObject() const;
 
 	UDCPickupManagerComponent* GetPickupManagerComponent() const;
-	
-	FDCOnPlayerDied OnPlayerDied;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -83,6 +86,8 @@ private:
 	void ReportNoise();
 
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	void SetupPlayerHUD();
 
 	virtual void OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust) override;
 
@@ -244,4 +249,6 @@ private:
 	EDCMovementState CurrentPlayerMovementState;
 
 	FTimerHandle WidgetRetryConstruction;
+
+	bool bNeedsHUDSetup = true;
 };

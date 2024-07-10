@@ -6,6 +6,8 @@
 
 #include "DCPlayerState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnPlayerDied);
+
 UCLASS()
 class ADCPlayerState : public APlayerState
 {
@@ -13,8 +15,7 @@ class ADCPlayerState : public APlayerState
 
 public:
 	// Begin AActor override
-	virtual void BeginPlay() override;
-	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
 
 	// Sets the player's death state
@@ -23,9 +24,11 @@ public:
 	// Returns whether the pawn associated with this player state is dead
 	bool IsPlayerDead() const;
 
+	FDCOnPlayerDied OnPlayerDied;
+
 private:
 	UFUNCTION()
-	void OnPlayerDied();
-
+	void OnRep_PlayerDied(bool bOldDeathState);
+	UPROPERTY(ReplicatedUsing=OnRep_PlayerDied)
 	bool bIsDead = false;
 };

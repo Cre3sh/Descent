@@ -6,9 +6,9 @@
 #include <MediaPlayer.h>
 #include <GameFramework/GameStateBase.h>
 #include <GameFramework/PlayerState.h>
-#include <Camera/CameraActor.h>
 
 #include "Player/DCPlayerCharacter.h"
+#include "Player/DCPlayerState.h"
 
 void UDCPlayerHUD::NativeConstruct()
 {
@@ -20,23 +20,30 @@ void UDCPlayerHUD::NativeConstruct()
 	// as it tries to load the media source etc.
 
 	MediaPlayer->OpenSource(DeathSceneMediaSource);
-
-	ADCPlayerCharacter* const OwningCharacter = GetOwningPlayerPawn<ADCPlayerCharacter>();
-	if (IsValid(OwningCharacter))
-	{
-		OwningCharacter->OnPlayerDied.AddDynamic(this, &UDCPlayerHUD::OnPlayerDied);
-	}
 }
 
 void UDCPlayerHUD::NativeDestruct()
 {
 	Super::NativeDestruct();
 
-	ADCPlayerCharacter* const OwningCharacter = GetOwningPlayerPawn<ADCPlayerCharacter>();
-	if (IsValid(OwningCharacter))
+	ADCPlayerCharacter* const OwningPlayer = GetOwningPlayerPawn<ADCPlayerCharacter>();
+	if (!IsValid(OwningPlayer))
 	{
-		OwningCharacter->OnPlayerDied.RemoveAll(this);
+		return;
 	}
+
+	ADCPlayerState* const OwningPlayerState = OwningPlayer->GetPlayerState<ADCPlayerState>();
+
+	check(OwningPlayerState);
+
+	OwningPlayerState->OnPlayerDied.RemoveAll(this);
+}
+
+void UDCPlayerHUD::OnOwningPlayerStateSet(ADCPlayerState* PlayerState)
+{
+	check(PlayerState);
+
+	PlayerState->OnPlayerDied.AddDynamic(this, &UDCPlayerHUD::OnPlayerDied);
 }
 
 void UDCPlayerHUD::OnPlayerDied()
@@ -79,11 +86,11 @@ void UDCPlayerHUD::OnJumpscareFinished()
 			continue;
 		}
 
-		GetOwningPlayer()->SetViewTargetWithBlend(PlayerCharacter->GetSpectatorCamera());
-
-		if (IsValid(OwningPlayer))
+		if (!IsValid(OwningPlayer))
 		{
-			OwningPlayer->Destroy();
+			return;
 		}
+
+		OwningPlayer->SpectatePlayer(PlayerCharacter);
 	}
 }

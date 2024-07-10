@@ -64,7 +64,7 @@ void AApparitionAIController::SetPlayerCaught(APawn* pawn) const
 {
 	check(BlackboardComponent);
 	
-	BlackboardComponent->SetValueAsObject(PlayerKey, UGameplayStatics::GetPlayerPawn(GetWorld(), 0));
+	BlackboardComponent->SetValueAsObject(PlayerKey, pawn);
 }
 
 void AApparitionAIController::SetSensedTarget(APawn* NewTarget) const

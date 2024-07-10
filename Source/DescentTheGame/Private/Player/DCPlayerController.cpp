@@ -4,6 +4,7 @@
 
 #include <Net/VoiceConfig.h>
 
+#include "DCPlayerCharacter.h"
 #include "Base/DCGameMode.h"
 
 void ADCPlayerController::OnPossess(APawn* InPawn)

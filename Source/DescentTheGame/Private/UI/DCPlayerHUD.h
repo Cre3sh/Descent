@@ -6,6 +6,8 @@
 
 #include "DCPlayerHUD.generated.h"
 
+class ADCPlayerState;
+class ADCPlayerCharacter;
 class UDCSceneData;
 class UMediaSource;
 class UMediaPlayer;
@@ -21,6 +23,8 @@ public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 	// End UUserWidget override
+
+	void OnOwningPlayerStateSet(ADCPlayerState* PlayerState);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))

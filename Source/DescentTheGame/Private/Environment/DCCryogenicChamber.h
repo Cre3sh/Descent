@@ -53,4 +53,5 @@ private:
 	bool bIsMoving = false;
 
 	FTimerHandle RevivePlayerHandle;
+	FTimerHandle DestroySmokeHandle;
 };

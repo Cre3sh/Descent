@@ -20,6 +20,7 @@
 #include <Net/UnrealNetwork.h>
 
 #include "DCPickupManagerComponent.h"
+#include "DCPlayerState.h"
 #include "Audio/DCTerrorRadiusComponent.h"
 #include "Base/DCAdvancedGameInstance.h"
 #include "Camera/CameraActor.h"
@@ -65,6 +66,26 @@ ADCPlayerCharacter::ADCPlayerCharacter()
 	CrouchSpeed = 6.f;
 }
 
+void ADCPlayerCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+
+	if (bNeedsHUDSetup)
+	{
+		SetupPlayerHUD();
+	}
+}
+
+void ADCPlayerCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+
+	if (bNeedsHUDSetup)
+	{
+		SetupPlayerHUD();
+	}
+}
+
 // Called when the game starts or when spawned
 void ADCPlayerCharacter::BeginPlay()
 {
@@ -79,21 +100,6 @@ void ADCPlayerCharacter::BeginPlay()
 
 		// Add Input Mapping Context
 		InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
-
-		if (PlayerController->IsLocalController())
-		{
-			PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
-			if (IsValid(PlayerHUD))
-			{
-				PlayerHUD->AddToViewport();
-			}
-
-			SceneManager = CreateWidget<UDCUISceneManager>(PlayerController, SceneManagerClass);
-			if (IsValid(SceneManager))
-			{
-				SceneManager->AddToViewport();
-			}
-		}
 	}
 
 	check(PlayerInfoWidgetComponent);
@@ -104,7 +110,7 @@ void ADCPlayerCharacter::BeginPlay()
 
 	FootstepAudioComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
-	if (HasAuthority())
+	if (!IsLocallyControlled())
 	{
 		SpectatorCameraActor = Cast<ACameraActor>(GetWorld()->SpawnActor(ACameraActor::StaticClass()));
 
@@ -118,6 +124,11 @@ void ADCPlayerCharacter::BeginPlay()
 	// Set up local player info
 	if (IsLocallyControlled())
 	{
+		if (IsValid(GetPlayerState()) && bNeedsHUDSetup)
+		{
+			SetupPlayerHUD();
+		}
+
 		const UDCAdvancedGameInstance* const GameInstance = GetGameInstance<UDCAdvancedGameInstance>();
 
 		check(GameInstance);
@@ -267,9 +278,21 @@ void ADCPlayerCharacter::OnPlayerCaught()
 	float RandomZ = FMath::RandRange(25000.0f, 100000.0f);
 	SkeletalMeshComponent->AddImpulse(FVector(RandomX, RandomY, RandomZ));
 
-	if (OnPlayerDied.IsBound())
+	ADCPlayerState* const OwningPlayerState = GetPlayerState<ADCPlayerState>();
+
+	check(OwningPlayerState);
+
+	OwningPlayerState->SetPlayerDead(true);
+}
+
+void ADCPlayerCharacter::SpectatePlayer(ADCPlayerCharacter* PlayerCharacter)
+{
+	GetController<APlayerController>()->SetViewTargetWithBlend(PlayerCharacter->GetSpectatorCamera());
+	GetController<APlayerController>()->ClientSetViewTarget(PlayerCharacter->GetSpectatorCamera());
+
+	if (IsValid(this))
 	{
-		OnPlayerDied.Broadcast();
+		Destroy();
 	}
 }
 
@@ -289,6 +312,33 @@ void ADCPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 	// todo add back once we have a main menu
 	//EnhancedInputComponent->BindAction(EscapeAction, ETriggerEvent::Completed, SceneManager.Get(), &UDCUISceneManager::OnPlayerPressedEscape);
+}
+
+void ADCPlayerCharacter::SetupPlayerHUD()
+{
+	APlayerController* const PlayerController = GetController<APlayerController>();
+	if (!IsValid(PlayerController))
+	{
+		return;
+	}
+
+	if (PlayerController->IsLocalController())
+	{
+		PlayerHUD = CreateWidget<UDCPlayerHUD>(PlayerController, PlayerHUDClass);
+		if (IsValid(PlayerHUD))
+		{
+			PlayerHUD->AddToViewport();
+			PlayerHUD->OnOwningPlayerStateSet(GetPlayerState<ADCPlayerState>());
+		}
+
+		SceneManager = CreateWidget<UDCUISceneManager>(PlayerController, SceneManagerClass);
+		if (IsValid(SceneManager))
+		{
+			SceneManager->AddToViewport();
+		}
+
+		bNeedsHUDSetup = false;
+	}
 }
 
 void ADCPlayerCharacter::StartSprint()
@@ -616,6 +666,8 @@ void ADCPlayerCharacter::UpdateMovementState()
 void ADCPlayerCharacter::UpdateCamera()
 {
 	const APlayerController* const PlayerController = Cast<APlayerController>(GetController());
+
+	bool bHas = HasAuthority();
 
 	if (IsValid(PlayerController))
 	{
