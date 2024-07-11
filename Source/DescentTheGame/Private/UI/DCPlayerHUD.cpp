@@ -8,6 +8,7 @@
 #include <GameFramework/PlayerState.h>
 
 #include "Player/DCPlayerCharacter.h"
+#include "Player/DCPlayerController.h"
 #include "Player/DCPlayerState.h"
 
 void UDCPlayerHUD::NativeConstruct()
@@ -86,11 +87,6 @@ void UDCPlayerHUD::OnJumpscareFinished()
 			continue;
 		}
 
-		if (!IsValid(OwningPlayer))
-		{
-			return;
-		}
-
-		OwningPlayer->SpectatePlayer(PlayerCharacter);
+		GetOwningPlayer<ADCPlayerController>()->SpectatePlayer(PlayerCharacter);
 	}
 }

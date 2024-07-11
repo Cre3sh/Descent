@@ -6,6 +6,7 @@
 
 #include "DCPlayerController.generated.h"
 
+class ADCPlayerCharacter;
 class UVOIPTalker;
 
 UCLASS()
@@ -17,6 +18,12 @@ public:
 	// Begin APlayerController override
 	virtual void OnPossess(APawn* InPawn) override;
 	// End APlayerController override
+	
+	void SpectatePlayer(ADCPlayerCharacter* PlayerCharacter);
+
+	UFUNCTION(Server, Reliable)
+	void Server_DestroyOwningPawn();
+	void DestroyOwningPawn();
 
 private:
 	UPROPERTY()

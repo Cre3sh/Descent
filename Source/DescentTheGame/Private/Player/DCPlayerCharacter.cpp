@@ -118,7 +118,6 @@ void ADCPlayerCharacter::BeginPlay()
 		SpectatorCameraActor->SetActorLocation(SpectatorCameraHolder->GetComponentLocation());
 		SpectatorCameraActor->SetActorRotation(SpectatorCameraHolder->GetComponentRotation());
 		SpectatorCameraActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-		SpectatorCameraActor->SetReplicates(true);
 	}
 
 	// Set up local player info
@@ -283,17 +282,6 @@ void ADCPlayerCharacter::OnPlayerCaught()
 	check(OwningPlayerState);
 
 	OwningPlayerState->SetPlayerDead(true);
-}
-
-void ADCPlayerCharacter::SpectatePlayer(ADCPlayerCharacter* PlayerCharacter)
-{
-	GetController<APlayerController>()->SetViewTargetWithBlend(PlayerCharacter->GetSpectatorCamera());
-	GetController<APlayerController>()->ClientSetViewTarget(PlayerCharacter->GetSpectatorCamera());
-
-	if (IsValid(this))
-	{
-		Destroy();
-	}
 }
 
 // Called to bind functionality to input

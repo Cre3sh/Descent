@@ -64,8 +64,6 @@ public:
 
 	void OnPlayerCaught();
 
-	void SpectatePlayer(ADCPlayerCharacter* PlayerCharacter);
-
 	UMediaSoundComponent* GetMediaSoundComponent() const;
 
 	UDCUISceneManager* GetSceneManager() const;

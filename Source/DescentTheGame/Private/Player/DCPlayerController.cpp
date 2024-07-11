@@ -3,6 +3,7 @@
 #include "Player/DCPlayerController.h"
 
 #include <Net/VoiceConfig.h>
+#include <Camera/CameraActor.h>
 
 #include "DCPlayerCharacter.h"
 #include "Base/DCGameMode.h"
@@ -44,5 +45,32 @@ void ADCPlayerController::OnPossess(APawn* InPawn)
 	
 		VoipTalkerComponent->Settings.AttenuationSettings = SoundAttenuation;
 		VoipTalkerComponent->Settings.ComponentToAttachTo = InPawn->GetRootComponent();
+	}
+}
+
+void ADCPlayerController::SpectatePlayer(ADCPlayerCharacter* PlayerCharacter)
+{
+	SetViewTarget(PlayerCharacter->GetSpectatorCamera());
+
+	DestroyOwningPawn();
+}
+
+void ADCPlayerController::Server_DestroyOwningPawn_Implementation()
+{
+	DestroyOwningPawn();
+}
+
+void ADCPlayerController::DestroyOwningPawn()
+{
+	if (!HasAuthority())
+	{
+		Server_DestroyOwningPawn();
+		return;
+	}
+
+	APawn* const OwningPawn = GetPawn();
+	if (IsValid(OwningPawn))
+	{
+		OwningPawn->Destroy();
 	}
 }
