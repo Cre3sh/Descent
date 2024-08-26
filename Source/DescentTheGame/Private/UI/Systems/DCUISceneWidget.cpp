@@ -34,8 +34,20 @@ FReply UDCUISceneWidget::NativeOnKeyDown(const FGeometry& InGeometry, const FKey
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
+void UDCUISceneWidget::SetSceneTag(FGameplayTag InSceneTag)
+{
+	SceneTag = InSceneTag;
+}
+
+FGameplayTag UDCUISceneWidget::GetSceneTag() const
+{
+	return SceneTag;
+}
+
 void UDCUISceneWidget::OnSceneOpened()
 {
+	bSceneClosed = false;
+
 	const UWorld* const World = GetWorld();
 	if (!IsValid(World))
 	{
@@ -66,11 +78,21 @@ void UDCUISceneWidget::OnSceneOpened()
 
 	SetFocus();
 
+	if (OnSceneEnterAnimation)
+	{
+		PlayAnimation(OnSceneEnterAnimation);
+	}
+
 	SetVisibility(ESlateVisibility::Visible);
 }
 
-void UDCUISceneWidget::CloseScene()
+void UDCUISceneWidget::CloseScene(const bool bIgnoreInput)
 {
+	if (bSceneClosed)
+	{
+		return;
+	}
+
 	const UWorld* const World = GetWorld();
 	if (!IsValid(World))
 	{
@@ -83,19 +105,23 @@ void UDCUISceneWidget::CloseScene()
 		return;
 	}
 
-	PlayerController->bShowMouseCursor = false;
-	PlayerController->bEnableClickEvents = false;
-	PlayerController->bEnableMouseOverEvents = false;
+	if (!bIgnoreInput)
+	{
+		PlayerController->bShowMouseCursor = false;
+		PlayerController->bEnableClickEvents = false;
+		PlayerController->bEnableMouseOverEvents = false;
 
-	UGameViewportClient* const GameViewportClient = World->GetGameViewport();
+		UGameViewportClient* const GameViewportClient = World->GetGameViewport();
 
-	check(GameViewportClient);
+		check(GameViewportClient);
 
-	GameViewportClient->SetMouseLockMode(EMouseLockMode::LockAlways);
+		GameViewportClient->SetMouseLockMode(EMouseLockMode::LockAlways);
 
-	GameViewportClient->SetMouseCaptureMode(EMouseCaptureMode::CapturePermanently);
+		GameViewportClient->SetMouseCaptureMode(EMouseCaptureMode::CapturePermanently);
 
-	UWidgetBlueprintLibrary::SetInputMode_GameOnly(PlayerController);
+		UWidgetBlueprintLibrary::SetInputMode_GameOnly(PlayerController);
+	}
 
 	SetVisibility(ESlateVisibility::Collapsed);
+	bSceneClosed = true;
 }

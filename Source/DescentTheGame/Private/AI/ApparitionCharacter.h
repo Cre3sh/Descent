@@ -6,6 +6,7 @@
 
 #include "ApparitionCharacter.generated.h"
 
+class ADCPlayerCharacter;
 class UPawnSensingComponent;
 class UBehaviorTree;
 class UBoxComponent;
@@ -57,7 +58,7 @@ private:
 
 	// Callback exclusively for hitting pawns
 	UFUNCTION()
-	void OnPawnDetecionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnPawnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	// Callbacks for static objects
 	UFUNCTION()
@@ -65,4 +66,6 @@ private:
 	
 	UFUNCTION()
 	void OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	TWeakObjectPtr<ADCPlayerCharacter> WeakCaughtCharacter = nullptr;
 };

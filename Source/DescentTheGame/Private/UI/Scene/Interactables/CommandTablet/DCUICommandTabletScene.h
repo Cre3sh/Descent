@@ -26,7 +26,7 @@ public:
 	// End UUserWidget override
 
 	// Begin UDCUISceneWidget override
-	virtual void CloseScene() override;
+	virtual void CloseScene(const bool bIgnoreInput) override;
 	virtual void OnSceneOpened() override;
 	// End UDCUISceneWidget override
 

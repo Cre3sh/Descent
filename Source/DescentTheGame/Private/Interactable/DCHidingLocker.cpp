@@ -25,7 +25,6 @@ void ADCHidingLocker::Interact(ADCPlayerCharacter* InteractingCharacter)
 {
 	check(PlayerHoldingComponent);
 
-	// Check for multiple people trying to interact
 	if (IsBeingInteracted())
 	{
 		if (InteractingCharacter == GetOwner())
@@ -41,6 +40,8 @@ void ADCHidingLocker::Interact(ADCPlayerCharacter* InteractingCharacter)
 				InteractingCharacter->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 
 				SetIsBeingInteracted(false);
+
+				InteractingCharacter->SetIsHiding(false);
 			}
 		}
 
@@ -62,4 +63,5 @@ void ADCHidingLocker::Interact(ADCPlayerCharacter* InteractingCharacter)
 	InteractingCharacter->SetActorRotation(PlayerHoldingComponent->GetRelativeRotation());
 
 	InteractingCharacter->GetCharacterMovement()->DisableMovement();
+	InteractingCharacter->SetIsHiding(true);
 }

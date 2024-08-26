@@ -6,6 +6,8 @@
 
 #include "DCUIMenuWidget.generated.h"
 
+class UMediaPlayer;
+class UMediaSource;
 class UWidgetSwitcher;
 class UDCUIMenuElementButton;
 class UEditableText;
@@ -18,7 +20,6 @@ class UDCUIMenuWidget : public UDCUISceneWidget
 public:
 	// Begin UUserWidget override
 	virtual void NativeConstruct() override;
-
 	virtual void NativeDestruct() override;
 	// End UUserWidget override
 
@@ -41,10 +42,27 @@ protected:
 	UPROPERTY(EditDefaultsOnly, meta=(BindWidget))
 	TObjectPtr<UWidgetSwitcher> ScreenSwitcher = nullptr;
 
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UMediaPlayer> MediaPlayer = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UMediaSource> MediaSource = nullptr;
+
 private:
 	UFUNCTION()
 	void OnPlayerNameChanged(const FText& Text);
 
 	UFUNCTION()
 	void OnQuitButtonPressed();
+
+	UFUNCTION()
+	void OnOptionsButtonPressed();
+
+	UFUNCTION()
+	void OnMediaOpened(FString OpenedUrl);
+	
+	UFUNCTION()
+	void OnMediaFinished();
+
+	FTimerHandle ExitAnimationFinishHandle;
 };

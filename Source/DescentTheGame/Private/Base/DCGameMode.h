@@ -16,6 +16,8 @@ class ADCGameMode : public AGameMode
 	GENERATED_BODY()
 
 public:
+	ADCGameMode();
+
 	// Begin AGameModeBase override
 	virtual void InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage) override;
 	virtual void OnPostLogin(AController* NewPlayer) override;

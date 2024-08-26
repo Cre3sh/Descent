@@ -89,4 +89,6 @@ void UDCPlayerHUD::OnJumpscareFinished()
 
 		GetOwningPlayer<ADCPlayerController>()->SpectatePlayer(PlayerCharacter);
 	}
+
+	MediaPlayer->OnEndReached.RemoveAll(this);
 }

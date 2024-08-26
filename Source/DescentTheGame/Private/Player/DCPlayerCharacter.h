@@ -47,6 +47,7 @@ public:
 	
 	// Begin AActor override
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
@@ -62,6 +63,8 @@ public:
 
 	void SetLastInteractedObject(ADCInteractableObject* InteractableObject);
 
+	void SetIsHiding(const bool bPlayerHiding);
+
 	void OnPlayerCaught();
 
 	UMediaSoundComponent* GetMediaSoundComponent() const;
@@ -71,6 +74,8 @@ public:
 	ADCInteractableObject* GetLastInteractedObject() const;
 
 	UDCPickupManagerComponent* GetPickupManagerComponent() const;
+
+	bool IsHiding() const;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -241,12 +246,16 @@ private:
 	void OnRep_LastInteractedObject();
 	UPROPERTY(ReplicatedUsing = OnRep_LastInteractedObject)
 	TWeakObjectPtr<ADCInteractableObject> LastInteractedObject = nullptr;
-
-	float DistanceTravelled = 0.0f;
 	
 	EDCMovementState CurrentPlayerMovementState;
 
 	FTimerHandle WidgetRetryConstruction;
 
+	float DistanceTravelled = 0.0f;
+
 	bool bNeedsHUDSetup = true;
+
+	bool bIsHiding = false;
+
+	bool bIsDead = false;
 };

@@ -6,26 +6,33 @@
 #include <Components/EditableText.h>
 #include <Kismet/KismetSystemLibrary.h>
 #include <GameFramework/GameUserSettings.h>
+#include <MediaPlayer.h>
 
 #include <AdvancedSteamFriendsLibrary.h>
 #include <AdvancedSessionsLibrary.h>
 
 #include "DCUIMenuElementButton.h"
 #include "Base/DCAdvancedGameInstance.h"
+#include "DCMenuCharacter.h"
+#include "UI/Systems/DCUISceneManager.h"
+#include "UI/Tags/DCSceneTags.h"
 
 void UDCUIMenuWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
+	check(MediaPlayer);
 	check(HostButton);
 	check(JoinButton);
 	check(OptionsButton);
 	check(QuitButton)
 	check(EditablePlayerNameText);
 
-	EditablePlayerNameText->OnTextChanged.AddDynamic(this, &UDCUIMenuWidget::OnPlayerNameChanged);
+	MediaPlayer->OpenSource(MediaSource);
+	MediaPlayer->OnMediaOpened.AddDynamic(this, &UDCUIMenuWidget::OnMediaOpened);
+	MediaPlayer->OnEndReached.AddDynamic(this, &UDCUIMenuWidget::OnMediaFinished);
 
-	Super::NativeDestruct();
+	EditablePlayerNameText->OnTextChanged.AddDynamic(this, &UDCUIMenuWidget::OnPlayerNameChanged);
 
 	FBPUniqueNetId UniqueNetID;
 	UAdvancedSessionsLibrary::GetUniqueNetID(Cast<APlayerController>(GetOwningPlayer()), UniqueNetID);
@@ -65,6 +72,7 @@ void UDCUIMenuWidget::NativeConstruct()
 
 	// Can assume here we have a valid button otherwise game would have crashed already
 	QuitButton->GetButton()->OnPressed.AddDynamic(this, &UDCUIMenuWidget::OnQuitButtonPressed);
+	OptionsButton->GetButton()->OnPressed.AddDynamic(this, &UDCUIMenuWidget::OnOptionsButtonPressed);
 
 	// TODO remove this once the options menu is implemented
 	UGameUserSettings* UserSettings = GEngine->GetGameUserSettings();
@@ -91,6 +99,7 @@ void UDCUIMenuWidget::NativeDestruct()
 	UWorld* World = GetWorld();
 	if (IsValid(World))
 	{
+	
 		APlayerController* PlayerController = World->GetFirstPlayerController();
 		if (IsValid(PlayerController))
 		{
@@ -113,4 +122,31 @@ void UDCUIMenuWidget::OnPlayerNameChanged(const FText& Text)
 void UDCUIMenuWidget::OnQuitButtonPressed()
 {
 	UKismetSystemLibrary::QuitGame(this, GetOwningPlayer(), EQuitPreference::Quit, false);
+}
+
+void UDCUIMenuWidget::OnOptionsButtonPressed()
+{
+	ADCMenuCharacter* const MenuCharacter = GetOwningPlayerPawn<ADCMenuCharacter>();
+
+	check(MenuCharacter);
+
+	PlayAnimation(OnSceneExitAnimation);
+	GetWorld()->GetTimerManager().SetTimer(ExitAnimationFinishHandle, FTimerDelegate::CreateWeakLambda(this, [this, MenuCharacter]()
+	{
+		CloseScene(true);
+		MenuCharacter->SceneManager->OpenScene(Tag_UI_Scene_Options);
+	}), 0.5f, false);
+}
+
+void UDCUIMenuWidget::OnMediaOpened(FString OpenedUrl)
+{
+	MediaPlayer->Play();
+
+	MediaPlayer->OnMediaOpened.RemoveAll(this);
+}
+
+void UDCUIMenuWidget::OnMediaFinished()
+{
+	MediaPlayer->Rewind();
+	MediaPlayer->Play();
 }

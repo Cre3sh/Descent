@@ -21,27 +21,39 @@ FReply UDCUISceneManager::NativeOnKeyDown(const FGeometry& InGeometry, const FKe
 	return Super::NativeOnKeyDown(InGeometry, InKeyEvent);
 }
 
-UDCUISceneWidget* UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag)
+void UDCUISceneManager::NativeDestruct()
+{
+	Super::NativeDestruct();
+}
+
+UDCUISceneWidget* UDCUISceneManager::OpenScene(FGameplayTag InSceneTag)
 {
 	const UWorld* const World = GetWorld();
 
 	check(Canvas);
 	check(World);
-	check(PlayerCharacter);
 
-	PlayerWeak = PlayerCharacter;
-
-	APlayerController* const PlayerController = PlayerCharacter->GetController<APlayerController>();
+	APlayerController* const PlayerController = GetOwningPlayer<APlayerController>();
 
 	check(PlayerController);
 
 	// Check if this scene has already been constructed
 	if (ExistingScenes.Contains(InSceneTag))
 	{
-		UDCUISceneWidget* const OpenedScene = Cast<UDCUISceneWidget>(ExistingScenes.FindRef(InSceneTag));
-		if (!IsValid(OpenedScene))
+		UDCUISceneWidget* const ConstructedScene = ExistingScenes.FindRef(InSceneTag);
+		if (IsValid(ConstructedScene))
 		{
-			return nullptr;
+			if (IsValid(OpenedScene))
+			{
+				OpenedScene->CloseScene();
+			}
+
+			OpenedScene = ConstructedScene;
+			OpenedSceneTag = InSceneTag;
+
+			OpenedScene->OnSceneOpened();
+
+			return OpenedScene;
 		}
 
 		if (OpenedSceneTag == InSceneTag)
@@ -78,7 +90,15 @@ UDCUISceneWidget* UDCUISceneManager::OpenScene(ADCPlayerCharacter* PlayerCharact
 
 		OpenedSceneTag = InSceneTag;
 
+		NewScene->SetSceneTag(OpenedSceneTag);
 		NewScene->OnSceneOpened();
+
+		if (IsValid(OpenedScene))
+		{
+			OpenedScene->CloseScene();
+		}
+
+		OpenedScene = NewScene;
 	}
 
 	return NewScene;

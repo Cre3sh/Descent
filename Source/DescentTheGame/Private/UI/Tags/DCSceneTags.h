@@ -4,4 +4,7 @@
 
 #include <NativeGameplayTags.h>
 
+// Scenes
 UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tag_UI_Scene_CommandTablet);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tag_UI_Scene_MainMenu);
+UE_DECLARE_GAMEPLAY_TAG_EXTERN(Tag_UI_Scene_Options);

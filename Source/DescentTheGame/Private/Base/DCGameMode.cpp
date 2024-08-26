@@ -10,6 +10,11 @@
 #include "Procedural/DCRoomHolderActor.h"
 #include "Procedural/Data/DCRoomGenerationData.h"
 
+ADCGameMode::ADCGameMode()
+{
+	bUseSeamlessTravel = true;
+}
+
 void ADCGameMode::InitGame(const FString& MapName, const FString& Options, FString& ErrorMessage)
 {
 	Super::InitGame(MapName, Options, ErrorMessage);

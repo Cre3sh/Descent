@@ -42,7 +42,7 @@ void ADCCommandTablet::Interact(ADCPlayerCharacter* InteractingCharacter)
 
 	check(SceneManager);
 
-	UDCUICommandTabletScene* const CommandTabletScene = Cast<UDCUICommandTabletScene>(SceneManager->OpenScene(InteractingCharacter, Tag_UI_Scene_CommandTablet));
+	UDCUICommandTabletScene* const CommandTabletScene = Cast<UDCUICommandTabletScene>(SceneManager->OpenScene(Tag_UI_Scene_CommandTablet));
 	if (!IsValid(CommandTabletScene))
 	{
 		return;

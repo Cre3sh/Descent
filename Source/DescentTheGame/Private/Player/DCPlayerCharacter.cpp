@@ -118,6 +118,7 @@ void ADCPlayerCharacter::BeginPlay()
 		SpectatorCameraActor->SetActorLocation(SpectatorCameraHolder->GetComponentLocation());
 		SpectatorCameraActor->SetActorRotation(SpectatorCameraHolder->GetComponentRotation());
 		SpectatorCameraActor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		SpectatorCameraActor->bAlwaysRelevant = true;
 	}
 
 	// Set up local player info
@@ -149,6 +150,16 @@ void ADCPlayerCharacter::BeginPlay()
 
 	Torch->AttachToComponent(PlayerCamera, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 	MinimapSpringArmComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+}
+
+void ADCPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	if (IsValid(SpectatorCameraActor))
+	{
+		SpectatorCameraActor->Destroy();
+	}
 }
 
 // Called every frame
@@ -225,6 +236,11 @@ void ADCPlayerCharacter::SetLastInteractedObject(ADCInteractableObject* Interact
 	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, LastInteractedObject, this);
 }
 
+void ADCPlayerCharacter::SetIsHiding(const bool bPlayerHiding)
+{
+	bIsHiding = bPlayerHiding;
+}
+
 ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
 {
 	return LastInteractedObject.Get();
@@ -233,6 +249,11 @@ ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
 UDCPickupManagerComponent* ADCPlayerCharacter::GetPickupManagerComponent() const
 {
 	return PickupManagerComponent;
+}
+
+bool ADCPlayerCharacter::IsHiding() const
+{
+	return bIsHiding;
 }
 
 UMediaSoundComponent* ADCPlayerCharacter::GetMediaSoundComponent() const
@@ -262,6 +283,13 @@ void ADCPlayerCharacter::Server_ReportNoise_Implementation()
 
 void ADCPlayerCharacter::OnPlayerCaught()
 {
+	if (bIsDead)
+	{
+		return;
+	}
+
+	bIsDead = true;
+
 	GetCharacterMovement()->DisableMovement();
 	DisableInput(GetController<APlayerController>());
 
@@ -476,7 +504,7 @@ void ADCPlayerCharacter::ReportNoise()
 {
 	//Report that we've played a sound with a certain volume in a specific location
 
-	if (!HasAuthority())
+	if (!HasAuthority() && IsLocallyControlled())
 	{
 		Server_ReportNoise();
 		return;

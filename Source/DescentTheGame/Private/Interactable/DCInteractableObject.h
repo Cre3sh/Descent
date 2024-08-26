@@ -7,6 +7,7 @@
 
 #include "DCInteractableObject.generated.h"
 
+class UMaterialBillboardComponent;
 struct FGameplayTag;
 class ADCPlayerCharacter;
 

@@ -16,9 +16,10 @@ class ADCPlayerController : public APlayerController
 
 public:
 	// Begin APlayerController override
+	virtual bool InputKey(const FInputKeyParams& Params) override;
 	virtual void OnPossess(APawn* InPawn) override;
 	// End APlayerController override
-	
+
 	void SpectatePlayer(ADCPlayerCharacter* PlayerCharacter);
 
 	UFUNCTION(Server, Reliable)
@@ -28,4 +29,6 @@ public:
 private:
 	UPROPERTY()
 	TObjectPtr<UVOIPTalker> VoipTalkerComponent = nullptr;
+	
+	FTimerHandle DestroyPlayerHandle;
 };

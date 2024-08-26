@@ -16,8 +16,6 @@ ADCInteractableObject::ADCInteractableObject()
 void ADCInteractableObject::BeginPlay()
 {
 	Super::BeginPlay();
-
-	SetReplicates(true);
 }
 
 void ADCInteractableObject::Interact(ADCPlayerCharacter* InteractingCharacter)

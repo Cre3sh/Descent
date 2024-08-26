@@ -47,7 +47,7 @@ void AApparitionCharacter::BeginPlay()
 	PawnSensingComp->OnHearNoise.AddDynamic(this, &AApparitionCharacter::OnHearNoise);
 
 	check(PlayerDetectionBoxComponent);
-	PlayerDetectionBoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AApparitionCharacter::OnPawnDetecionBeginOverlap);
+	PlayerDetectionBoxComponent->OnComponentBeginOverlap.AddDynamic(this, &AApparitionCharacter::OnPawnDetectionBeginOverlap);
 
 	PlayerDetectionBoxComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 
@@ -76,40 +76,23 @@ void AApparitionCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 void AApparitionCharacter::Tick(float DeltaTime)
 {
-	const APawn* const PlayerPawn = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
-
-	if (!IsValid(PlayerPawn))
-	{
-		return;
-	}
-
-	const float Distance = FVector::Dist(GetActorLocation(), PlayerPawn->GetActorLocation());
-
-	check(TerrorSoundComponent);
 	check(FootStepSoundComponent);
 
-	// todo this code needs removing, this is a relic from when the game was singleplayer, this needs to be moved into a component eventually
-	if (!TerrorSoundComponent->IsPlaying())
-	{
-		TerrorSoundComponent->Play();
-	}
-
-	if (!FootStepSoundComponent->IsPlaying() && !PlayerDead)
+	if (!FootStepSoundComponent->IsPlaying() && !PlayerDead && !WeakCaughtCharacter.IsValid())
 	{
 		FootStepSoundComponent->Play();
 	}
 
-	if (Distance >= 5000.f && !PlayerDead)
+	ADCPlayerCharacter* const PlayerCharacter = WeakCaughtCharacter.Get();
+
+	AApparitionAIController* const AIController = Cast<AApparitionAIController>(GetController());
+
+	check(AIController);
+	if (IsValid(PlayerCharacter) && PlayerCharacter->IsHiding())
 	{
-		TerrorSoundComponent->SetVolumeMultiplier(0.0f);
-	}
-	else if (!PlayerDead)
-	{
-		TerrorSoundComponent->SetVolumeMultiplier(FMath::Clamp(1500 / Distance, 0.0f, 1.0f));
-	}
-	else
-	{
-		TerrorSoundComponent->SetVolumeMultiplier(0.0f);
+		WeakCaughtCharacter.Reset();
+
+		AIController->SetPlayerCaught(nullptr);
 	}
 }
 
@@ -130,6 +113,15 @@ void AApparitionCharacter::OnHearNoise(APawn* PawnInstigator, const FVector& Loc
 
 void AApparitionCharacter::OnPlayerCaught(APawn* InPawn)
 {
+	ADCPlayerCharacter* const PlayerCharacter = Cast<ADCPlayerCharacter>(InPawn);
+
+	check(PlayerCharacter);
+
+	if (PlayerCharacter->IsHiding())
+	{
+		return;
+	}
+
 	AApparitionAIController* const AIController = Cast<AApparitionAIController>(GetController());
 
 	check(AIController);
@@ -140,15 +132,15 @@ void AApparitionCharacter::OnPlayerCaught(APawn* InPawn)
 	}
 }
 
-void AApparitionCharacter::OnPawnDetecionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+void AApparitionCharacter::OnPawnDetectionBeginOverlap(UPrimitiveComponent* OverlappedComp, AActor* Other, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	ADCPlayerCharacter* const PlayerCharacter = Cast<ADCPlayerCharacter>(Other);
-	if (!IsValid(PlayerCharacter) || PlayerDead)
+	if (!IsValid(PlayerCharacter) || PlayerCharacter->IsHiding())
 	{
 		return;
 	}
 
-	PlayerDead = true;
+	WeakCaughtCharacter = PlayerCharacter;
 
 	FootStepSoundComponent->Stop();
 

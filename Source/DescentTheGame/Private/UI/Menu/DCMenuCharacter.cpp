@@ -5,6 +5,9 @@
 #include <Blueprint/UserWidget.h>
 #include <Kismet/GameplayStatics.h>
 
+#include "UI/Systems/DCUISceneManager.h"
+#include "UI/Tags/DCSceneTags.h"
+
 // Sets default values
 ADCMenuCharacter::ADCMenuCharacter()
 {
@@ -24,14 +27,15 @@ void ADCMenuCharacter::BeginPlay()
 	{
 		if (PlayerController->IsLocalController())
 		{
-			UUserWidget* const MenuWidget = CreateWidget(PlayerController, MainMenuWidgetClass);
+			SceneManager = Cast<UDCUISceneManager>(CreateWidget(PlayerController, SceneManagerWidgetClass));
 
-			if (!IsValid(MenuWidget))
+			if (!IsValid(SceneManager))
 			{
 				return;
 			}
 
-			MenuWidget->AddToViewport();
+			SceneManager->AddToViewport();
+			SceneManager->OpenScene(Tag_UI_Scene_MainMenu);
 		}
 	}	
 }

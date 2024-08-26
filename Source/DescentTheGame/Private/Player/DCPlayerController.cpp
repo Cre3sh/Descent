@@ -8,6 +8,11 @@
 #include "DCPlayerCharacter.h"
 #include "Base/DCGameMode.h"
 
+bool ADCPlayerController::InputKey(const FInputKeyParams& Params)
+{
+	return Super::InputKey(Params);
+}
+
 void ADCPlayerController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
@@ -50,9 +55,12 @@ void ADCPlayerController::OnPossess(APawn* InPawn)
 
 void ADCPlayerController::SpectatePlayer(ADCPlayerCharacter* PlayerCharacter)
 {
-	SetViewTarget(PlayerCharacter->GetSpectatorCamera());
-
 	DestroyOwningPawn();
+
+	GetWorld()->GetTimerManager().SetTimer(DestroyPlayerHandle, FTimerDelegate::CreateWeakLambda(this, [this, PlayerCharacter]()
+	{
+		SetViewTargetWithBlend(PlayerCharacter->GetSpectatorCamera());
+	}), 5.0f, false);
 }
 
 void ADCPlayerController::Server_DestroyOwningPawn_Implementation()

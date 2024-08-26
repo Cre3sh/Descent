@@ -22,10 +22,11 @@ class UDCUISceneManager : public UCommonActivatableWidget
 public:
 	// Begin UUserWidget override
 	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
+	virtual void NativeDestruct() override;
 	// End UUserWidget override
 
-	// Opens a scene for the specified player character
-	UDCUISceneWidget* OpenScene(ADCPlayerCharacter* PlayerCharacter, FGameplayTag InSceneTag);
+	// Opens a scene with the specified tag
+	UDCUISceneWidget* OpenScene(FGameplayTag InSceneTag);
 
 	// Returns an existing scene from the specified gameplay tag
 	UUserWidget* GetSceneByTag(FGameplayTag InSceneTag) const;
@@ -41,6 +42,9 @@ private:
 
 	UPROPERTY(Transient)
 	TMap<FGameplayTag, TObjectPtr<UDCUISceneWidget>> ExistingScenes = {};
+
+	UPROPERTY(Transient)
+	TObjectPtr<UDCUISceneWidget> OpenedScene = nullptr;
 
 	FGameplayTag OpenedSceneTag = FGameplayTag::EmptyTag;
 	

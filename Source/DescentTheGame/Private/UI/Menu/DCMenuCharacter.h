@@ -6,19 +6,24 @@
 
 #include "DCMenuCharacter.generated.h"
 
+class UDCUISceneManager;
+
 UCLASS()
 class ADCMenuCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ADCMenuCharacter();
 
-	// Called when the game starts or when spawned
+	// Begin AActor override
 	virtual void BeginPlay() override;
+	// End AActor override
+
+	UPROPERTY()
+	TObjectPtr<UDCUISceneManager> SceneManager = nullptr;
 
 private:
 	UPROPERTY(EditDefaultsOnly)
-	TSubclassOf<UUserWidget> MainMenuWidgetClass = nullptr;
+	TSubclassOf<UUserWidget> SceneManagerWidgetClass = nullptr;
 };

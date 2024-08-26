@@ -48,7 +48,7 @@ void UDCUICommandTabletScene::NativeDestruct()
 	SecurityDataEntryWidget->OnPuzzleCompleted.RemoveAll(this);
 }
 
-void UDCUICommandTabletScene::CloseScene()
+void UDCUICommandTabletScene::CloseScene(const bool bIgnoreInput)
 {
 	Super::CloseScene();
 
