@@ -23,6 +23,9 @@ public:
 	// Try to add a pickup to our owner player, will return false if failed
 	bool AddPickupFromTag(const FGameplayTag InTag);
 
+	// Check to see if the player has a pickup with the specified tag
+	bool HasPickup(const FGameplayTag InTag) const;
+
 	UPROPERTY(EditAnywhere)
 	TObjectPtr<UDCPickupsData> PickupsData;
 

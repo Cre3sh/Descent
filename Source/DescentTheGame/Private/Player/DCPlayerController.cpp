@@ -2,65 +2,30 @@
 
 #include "Player/DCPlayerController.h"
 
-#include <Net/VoiceConfig.h>
 #include <Camera/CameraActor.h>
 
 #include "DCPlayerCharacter.h"
-#include "Base/DCGameMode.h"
 
-bool ADCPlayerController::InputKey(const FInputKeyParams& Params)
+void ADCPlayerController::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	return Super::InputKey(Params);
-}
-
-void ADCPlayerController::OnPossess(APawn* InPawn)
-{
-	Super::OnPossess(InPawn);
-
-	const UWorld* const World = GetWorld();
-	if (!IsValid(World))
-	{
-		return;
-	}
-
-	ADCGameMode* const GameMode = World->GetAuthGameMode<ADCGameMode>();
-	if (!IsValid(GameMode))
-	{
-		return;
-	}
-
-	VoipTalkerComponent = Cast<UVOIPTalker>(AddComponentByClass(UVOIPTalker::StaticClass(), false, FTransform::Identity, false));
-
-	check(VoipTalkerComponent);
-
-	APlayerState* const OwningPlayerState = PlayerState;
-	if (IsValid(OwningPlayerState))
-	{
-		VoipTalkerComponent->RegisterWithPlayerState(OwningPlayerState);
-
-		UVOIPStatics::SetMicThreshold(-1.0f);
-
-		USoundAttenuation* const SoundAttenuation = NewObject<USoundAttenuation>();
-		if (!IsValid(SoundAttenuation))
-		{
-			return;
-		}
-
-		SoundAttenuation->Attenuation.bSpatialize = true;
+	Super::EndPlay(EndPlayReason);
 	
-		VoipTalkerComponent->Settings.AttenuationSettings = SoundAttenuation;
-		VoipTalkerComponent->Settings.ComponentToAttachTo = InPawn->GetRootComponent();
-	}
+	GetWorld()->GetTimerManager().ClearTimer(DestroyPlayerHandle);
 }
 
 void ADCPlayerController::SpectatePlayer(ADCPlayerCharacter* PlayerCharacter)
 {
 	DestroyOwningPawn();
 
+	if (!IsValid(PlayerCharacter))
+	{
+		return;
+	}
+
 	GetWorld()->GetTimerManager().SetTimer(DestroyPlayerHandle, FTimerDelegate::CreateWeakLambda(this, [this, PlayerCharacter]()
 	{
 		SetViewTargetWithBlend(PlayerCharacter->GetSpectatorCamera());
-	}), 5.0f, false);
+	}), 2.50f, false);
 }
 
 void ADCPlayerController::Server_DestroyOwningPawn_Implementation()

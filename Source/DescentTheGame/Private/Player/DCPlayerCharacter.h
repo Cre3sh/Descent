@@ -3,10 +3,15 @@
 #pragma once
 
 #include <GameFramework/Character.h>
-#include <Runtime/MediaAssets/Public/MediaSoundComponent.h>
 
 #include "DCPlayerCharacter.generated.h"
 
+class ADCHandgun;
+class UDCInventoryComponent;
+class UDCMusicManagerComponent;
+class UDCFootstepData;
+class UDCFlashlightComponent;
+class UBoxComponent;
 class UDCTerrorRadiusComponent;
 class UDCPickupManagerComponent;
 struct FGameplayTag;
@@ -17,13 +22,11 @@ class UInputMappingContext;
 class ADCInteractableObject;
 class UDCUISceneManager;
 class UDCSceneData;
-class USceneCaptureComponent2D;
 class UDCPlayerHUD;
 class USpringArmComponent;
-class USpotLightComponent;
 class UCameraComponent;
 
-UENUM()
+UENUM(BlueprintType)
 enum EDCMovementState
 {
 	Idle,
@@ -63,19 +66,40 @@ public:
 
 	void SetLastInteractedObject(ADCInteractableObject* InteractableObject);
 
+	void BlendCamera();
+
 	void SetIsHiding(const bool bPlayerHiding);
 
-	void OnPlayerCaught();
+	void StartChase() const;
 
-	UMediaSoundComponent* GetMediaSoundComponent() const;
+	void OnPlayerCaught(FGameplayTag CatchingCharacter);
 
+	UDCPlayerHUD* GetPlayerHUD() const;
+	
 	UDCUISceneManager* GetSceneManager() const;
 
 	ADCInteractableObject* GetLastInteractedObject() const;
 
+	UDCFlashlightComponent* GetFlashlightComponent() const;
+
 	UDCPickupManagerComponent* GetPickupManagerComponent() const;
 
+	UDCInventoryComponent* GetInventoryComponent() const;
+
+	UFUNCTION(BlueprintCallable)
+	EDCMovementState GetMovementState() const;
+
+	UFUNCTION(Client, Reliable)
+	void Client_DisableVoiceChat();
+
+	UFUNCTION()
+	void OnRep_CustomPlayerName();
+	UPROPERTY(ReplicatedUsing = OnRep_CustomPlayerName)
+	FText CustomPlayerName = FText::GetEmpty();
+
 	bool IsHiding() const;
+
+	bool IsDead() const;
 
 private:
 	UFUNCTION(Server, Reliable)
@@ -87,7 +111,7 @@ private:
 	/*Report a sound that was played in our game*/
 	UFUNCTION(BlueprintCallable, Category = AI)
 	void ReportNoise();
-
+	
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void SetupPlayerHUD();
@@ -104,27 +128,28 @@ private:
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	void UpdateFootsteps(const float DeltaTime);
-
 	UFUNCTION(Server, Reliable)
 	void Server_UpdateMovementState();
 	void UpdateMovementState();
-	
-	UFUNCTION()
-	void OnRep_CustomPlayerName();
-	UPROPERTY(ReplicatedUsing = OnRep_CustomPlayerName)
-	FText CustomPlayerName = FText::GetEmpty();
 
 	void UpdateCamera();
 
 	/*Check Material under the Player*/
+	UFUNCTION(BlueprintCallable)
 	void FootCheck();
 
-	UFUNCTION(Server, Reliable)
-	void Server_InteractCheck();
+	UFUNCTION()
+	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
-	/*Check for player interactions*/
-	void InteractCheck();
+	UFUNCTION()
+	void OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	// Returns the first actor that meets the interaction criteria
+	AActor* InteractCheck();
+
+	UFUNCTION(Server, Reliable)
+	void Server_Interact();
+	void Interact();
 
 	void StartCrouch();
 	void EndCrouch();
@@ -137,10 +162,33 @@ private:
 	void Server_EndSprint();
 	void EndSprint();
 
-	void SetPlayerInfoName();
+	void StartAim();
+	void EndAim();
 
-	/*Toggles the flashlight*/
-	void ToggleLight() const;
+	UFUNCTION(Server, Reliable)
+	void Server_OnStartAim();
+	UFUNCTION(Server, Reliable)
+	void Server_OnEndAim();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Netmulticast_OnStartAim();
+	UFUNCTION(NetMulticast, Reliable)
+	void Netmulticast_OnEndAim();
+
+	UFUNCTION(Server, Reliable)
+	void Server_ShootGun();
+	void ShootGun();
+
+	void Hotbar1Press();
+	void Hotbar2Press();
+	void Hotbar3Press();
+	void Hotbar4Press();
+
+	// Called every frame to see if we have an item that
+	// meets interaction criteria for us to display an action prompt
+	void CheckForItem();
+
+	void SetPlayerInfoName();
 
 	// Called at game start
 	void LoadSoundFiles();
@@ -153,8 +201,6 @@ private:
 	
 	bool bSprinting;
 	bool bCrouching;
-
-	bool HasFlashlight = false;
 
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UUserWidget> PlayerHUDClass = nullptr;
@@ -181,12 +227,45 @@ private:
 	TObjectPtr<UInputAction> SprintAction = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> JumpAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> AimAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> FlashlightAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> HotbarAction1 = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> HotbarAction2 = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> HotbarAction3 = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> HotbarAction4 = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> UseItemAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<UInputAction> ShootAction = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
 	TObjectPtr<UWidgetComponent> PlayerInfoWidgetComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly)
-	TArray<TSoftObjectPtr<USoundBase>> FootstepSounds = {};
+	TArray<TSoftObjectPtr<USoundBase>> DefaultFootstepSounds = {};
 
-	UPROPERTY(EditDefaultsOnly, Category = "Camera")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess))
+	TObjectPtr<USkeletalMeshComponent> PlayerArm = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess))
+	TObjectPtr<USkeletalMeshComponent> PlayerBody = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, meta=(AllowPrivateAccess), Category = "Camera")
 	TObjectPtr<UCameraComponent> PlayerCamera = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
@@ -195,37 +274,49 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Camera")
 	TObjectPtr<USceneComponent> SpectatorCameraHolder = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "Minimap")
-	TObjectPtr<USpringArmComponent> MinimapSpringArmComponent = nullptr;
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<USpringArmComponent> SpringArmComponent = nullptr;
 
-	UPROPERTY(VisibleAnywhere, Category = "Minimap")
-	TObjectPtr<USceneCaptureComponent2D> SceneCaptureComponent = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
+	TObjectPtr<UDCInventoryComponent> InventoryComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Pickups")
 	TObjectPtr<UDCPickupManagerComponent> PickupManagerComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
-	TObjectPtr<UDCTerrorRadiusComponent> TerrorComponent = nullptr;
+	TObjectPtr<UDCMusicManagerComponent> MusicManagerComponent = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sound")
 	TObjectPtr<UAudioComponent> FootstepAudioComponent = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sound")
-	TObjectPtr<UAudioComponent> FlashlightAudioComponent = nullptr;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Sound")
-	TObjectPtr<UMediaSoundComponent> ApparitionDeathSound = nullptr;
 	
-	/*This will be used to give our player the ability to emit sounds the AI can hear*/
-	UPROPERTY(EditDefaultsOnly, Category = "Sound")
-	TObjectPtr<UPawnNoiseEmitterComponent> PawnNoiseEmitterComp;
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
+	TObjectPtr<USpringArmComponent> FlashlightSpringArmComponent = nullptr;
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Flashlight")
+	TObjectPtr<UDCFlashlightComponent> FlashlightComponent = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Detection")
+	TObjectPtr<UBoxComponent> DetectionBox = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Detection")
+	TObjectPtr<UMaterial> ItemDetectionMaterial = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<ADCHandgun> HandgunClass = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Animation")
+	TObjectPtr<UAnimMontage> GunIdleMontage = nullptr;
+
+	UPROPERTY(EditDefaultsOnly)
+	TObjectPtr<ADCHandgun> Handgun = nullptr;
 
 	// A scene manager used to manage the opening and closing of scenes
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TObjectPtr<UDCUISceneManager> SceneManager = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = "SpotLight")
-	TObjectPtr<USpotLightComponent> Torch = nullptr;
+	// The data asset containing footstep sounds for each kind of surface
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	TObjectPtr<UDCFootstepData> FootstepData = nullptr;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Crouch")
 	FVector CrouchEyeOffset = FVector::ZeroVector;
@@ -239,6 +330,9 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Crouch")
 	float CrouchSpeed = 0.0f;
 
+	UPROPERTY(Replicated, EditAnywhere, BlueprintReadWrite, meta=(AllowPrivateAccess))
+	bool bAiming = false;
+
 	UPROPERTY()
 	TObjectPtr<UDCPlayerHUD> PlayerHUD = nullptr;
 
@@ -250,8 +344,6 @@ private:
 	EDCMovementState CurrentPlayerMovementState;
 
 	FTimerHandle WidgetRetryConstruction;
-
-	float DistanceTravelled = 0.0f;
 
 	bool bNeedsHUDSetup = true;
 

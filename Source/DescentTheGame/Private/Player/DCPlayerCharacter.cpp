@@ -5,62 +5,74 @@
 #include <Camera/CameraComponent.h>
 #include <Components/InputComponent.h>
 #include <Math/UnrealMathUtility.h>
-#include <Components/SpotLightComponent.h>
 #include <Components/AudioComponent.h>
 #include <GameFramework/CharacterMovementComponent.h>
-#include <Components/PawnNoiseEmitterComponent.h>
 #include <Engine/StreamableManager.h>
 #include <Engine/AssetManager.h>
-#include <Components/SceneCaptureComponent2D.h>
 #include <GameFramework/SpringArmComponent.h>
 #include <Blueprint/UserWidget.h>
 #include <EnhancedInputComponent.h>
 #include <EnhancedInputSubsystems.h>
 #include <Components/WidgetComponent.h>
 #include <Net/UnrealNetwork.h>
+#include <Camera/CameraActor.h>
+#include <Components/BoxComponent.h>
 
 #include "DCPickupManagerComponent.h"
 #include "DCPlayerState.h"
-#include "Audio/DCTerrorRadiusComponent.h"
 #include "Base/DCAdvancedGameInstance.h"
-#include "Camera/CameraActor.h"
+#include "Components/DCMusicManagerComponent.h"
+#include "Data/DCFootstepData.h"
 #include "Interactable/DCInteractableObject.h"
+#include "Inventory/DCInventoryComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Net/Core/PushModel/PushModel.h"
 #include "UI/DCPlayerHUD.h"
 #include "UI/Player/DCUIPlayerInfoWidget.h"
 #include "UI/Systems/DCUISceneManager.h"
+#include "Utility/DCFlashlightComponent.h"
+#include "Weapon/DCHandgun.h"
 
 // Sets default values
 ADCPlayerCharacter::ADCPlayerCharacter()
 {
 	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
+	
+	SpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPSSpringArm"));
+	SpringArmComponent->SetupAttachment(RootComponent);
 
 	PlayerCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("Camera"));
-	PlayerCamera->SetupAttachment(RootComponent);
+	PlayerCamera->SetupAttachment(SpringArmComponent);
 	PlayerCamera->SetRelativeLocation(FVector(0, 0, 40));
 	PlayerCamera->bUsePawnControlRotation = true;
 
-	MinimapSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Minimap Spring Arm"));
+	PlayerArm = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Arm"));
+	PlayerArm->SetupAttachment(PlayerCamera);
+
+	PlayerBody = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Player Body"));
+	PlayerBody->SetupAttachment(RootComponent);
 
 	PlayerInfoWidgetComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("PlayerInfoWidget"));
 	PlayerInfoWidgetComponent->SetupAttachment(RootComponent);
 
-	SceneCaptureComponent = CreateDefaultSubobject<USceneCaptureComponent2D>(TEXT("Scene Capture Camera"));
-	SceneCaptureComponent->SetupAttachment(MinimapSpringArmComponent);
-
+	InventoryComponent = CreateDefaultSubobject<UDCInventoryComponent>(TEXT("Inventory Component"));
+	
 	PickupManagerComponent = CreateDefaultSubobject<UDCPickupManagerComponent>(TEXT("Pickup manager component"));
-	TerrorComponent = CreateDefaultSubobject<UDCTerrorRadiusComponent>(TEXT("Terror Component"));
 
 	SpectatorCameraHolder = CreateDefaultSubobject<USceneComponent>(TEXT("Spectator Camera Holder"));
 	SpectatorCameraHolder->SetupAttachment(PlayerCamera);
 
-	ApparitionDeathSound = CreateDefaultSubobject<UMediaSoundComponent>(TEXT("Apparition Death Sound"));
+	DetectionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("Detection Box"));
+	DetectionBox->SetupAttachment(RootComponent);
+
+	MusicManagerComponent = CreateDefaultSubobject<UDCMusicManagerComponent>(TEXT("Music Manager Component"));
 
 	FootstepAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Foot Step Audio Component"));
-	FlashlightAudioComponent = CreateDefaultSubobject<UAudioComponent>(TEXT("Flashlight sound"));
-	Torch = CreateDefaultSubobject<USpotLightComponent>(TEXT("TorchLight"));
-	PawnNoiseEmitterComp = CreateDefaultSubobject<UPawnNoiseEmitterComponent>(TEXT("PawnNoiseEmitterComp"));
+
+	FlashlightSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("Flashlight Spring Arm"));
+	FlashlightComponent = CreateDefaultSubobject<UDCFlashlightComponent>(TEXT("Flashlight"));
+	FlashlightComponent->SetupAttachment(FlashlightSpringArmComponent);
 
 	CrouchEyeOffset = FVector(0.f);
 	CrouchSpeed = 6.f;
@@ -96,10 +108,11 @@ void ADCPlayerCharacter::BeginPlay()
 	{
 		UEnhancedInputLocalPlayerSubsystem* InputSubsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer());
 
-		check(InputSubsystem);
-
-		// Add Input Mapping Context
-		InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
+		if (IsValid(InputSubsystem))
+		{
+			// Add Input Mapping Context
+			InputSubsystem->AddMappingContext(DefaultInputMappingContext, 0);
+		}
 	}
 
 	check(PlayerInfoWidgetComponent);
@@ -140,16 +153,24 @@ void ADCPlayerCharacter::BeginPlay()
 		check(PlayerInfoWidgetComponent);
 
 		PlayerInfoWidgetComponent->SetVisibility(false);
+
+		check(DetectionBox);
+
+		SpringArmComponent->SetActive(false);
+
+		DetectionBox->OnComponentBeginOverlap.AddDynamic(this, &ADCPlayerCharacter::OnComponentBeginOverlap);
+		DetectionBox->OnComponentEndOverlap.AddDynamic(this, &ADCPlayerCharacter::OnComponentEndOverlap);
 	}
 
-	/*Make it so the flashlight follows the camera's rotation*/
+	Handgun = GetWorld()->SpawnActor<ADCHandgun>(HandgunClass);
+	Handgun->SetActorRelativeLocation(FVector(-5.923281, -10.940239, -2.993598));
+	Handgun->SetActorRelativeRotation(FRotator(-23.774762, 242.773116, -248.750873));
+	Handgun->AttachToComponent(GetMesh(), FAttachmentTransformRules::KeepRelativeTransform, TEXT("WeaponSocket"));
+	Handgun->SetOwner(this);
 
-	check(Torch);
-	check(MinimapSpringArmComponent);
-	check(SceneCaptureComponent);
+	check(FlashlightSpringArmComponent);
 
-	Torch->AttachToComponent(PlayerCamera, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
-	MinimapSpringArmComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	FlashlightSpringArmComponent->AttachToComponent(RootComponent, FAttachmentTransformRules::SnapToTargetNotIncludingScale);
 }
 
 void ADCPlayerCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -167,9 +188,13 @@ void ADCPlayerCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UpdateFootsteps(DeltaTime);
 	UpdateMovementState();
 	UpdateCamera();
+
+	if (IsLocallyControlled())
+	{
+		CheckForItem();
+	}
 
 	const float CrouchInterpTime = FMath::Min(1.f, CrouchSpeed * DeltaTime);
 	CrouchEyeOffset = (1.f - CrouchInterpTime) * CrouchEyeOffset;
@@ -189,6 +214,7 @@ void ADCPlayerCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& O
 
 	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, CustomPlayerName, Params);
 	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, LastInteractedObject, Params);
+	DOREPLIFETIME_WITH_PARAMS_FAST(ADCPlayerCharacter, bAiming, Params);
 
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 }
@@ -236,9 +262,23 @@ void ADCPlayerCharacter::SetLastInteractedObject(ADCInteractableObject* Interact
 	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, LastInteractedObject, this);
 }
 
+void ADCPlayerCharacter::BlendCamera()
+{
+}
+
 void ADCPlayerCharacter::SetIsHiding(const bool bPlayerHiding)
 {
 	bIsHiding = bPlayerHiding;
+}
+
+void ADCPlayerCharacter::StartChase() const
+{
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	MusicManagerComponent->StartChase();
 }
 
 ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
@@ -246,9 +286,24 @@ ADCInteractableObject* ADCPlayerCharacter::GetLastInteractedObject() const
 	return LastInteractedObject.Get();
 }
 
+UDCFlashlightComponent* ADCPlayerCharacter::GetFlashlightComponent() const
+{
+	return FlashlightComponent;
+}
+
 UDCPickupManagerComponent* ADCPlayerCharacter::GetPickupManagerComponent() const
 {
 	return PickupManagerComponent;
+}
+
+UDCInventoryComponent* ADCPlayerCharacter::GetInventoryComponent() const
+{
+	return InventoryComponent;
+}
+
+EDCMovementState ADCPlayerCharacter::GetMovementState() const
+{
+	return CurrentPlayerMovementState;
 }
 
 bool ADCPlayerCharacter::IsHiding() const
@@ -256,9 +311,14 @@ bool ADCPlayerCharacter::IsHiding() const
 	return bIsHiding;
 }
 
-UMediaSoundComponent* ADCPlayerCharacter::GetMediaSoundComponent() const
+bool ADCPlayerCharacter::IsDead() const
 {
-	return ApparitionDeathSound;
+	return bIsDead;
+}
+
+UDCPlayerHUD* ADCPlayerCharacter::GetPlayerHUD() const
+{
+	return PlayerHUD;
 }
 
 UDCUISceneManager* ADCPlayerCharacter::GetSceneManager() const
@@ -281,7 +341,7 @@ void ADCPlayerCharacter::Server_ReportNoise_Implementation()
 	ReportNoise();
 }
 
-void ADCPlayerCharacter::OnPlayerCaught()
+void ADCPlayerCharacter::OnPlayerCaught(FGameplayTag CatchingCharacter)
 {
 	if (bIsDead)
 	{
@@ -309,7 +369,7 @@ void ADCPlayerCharacter::OnPlayerCaught()
 
 	check(OwningPlayerState);
 
-	OwningPlayerState->SetPlayerDead(true);
+	OwningPlayerState->SetPlayerDead(true, CatchingCharacter);
 }
 
 // Called to bind functionality to input
@@ -321,9 +381,19 @@ void ADCPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::Move);
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::Look);
-		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::InteractCheck);
+		EnhancedInputComponent->BindAction(InteractAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::Interact);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::StartSprint);
 		EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ADCPlayerCharacter::EndSprint);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Started, this, &ADCPlayerCharacter::StartAim);
+		EnhancedInputComponent->BindAction(AimAction, ETriggerEvent::Completed, this, &ADCPlayerCharacter::EndAim);
+		EnhancedInputComponent->BindAction(ShootAction, ETriggerEvent::Triggered, this, &ADCPlayerCharacter::ShootGun);
+		EnhancedInputComponent->BindAction(FlashlightAction, ETriggerEvent::Completed, FlashlightComponent.Get(), &UDCFlashlightComponent::UseLight);
+		EnhancedInputComponent->BindAction(HotbarAction1, ETriggerEvent::Started, this, &ADCPlayerCharacter::Hotbar1Press);
+		EnhancedInputComponent->BindAction(HotbarAction2, ETriggerEvent::Started, this, &ADCPlayerCharacter::Hotbar2Press);
+		EnhancedInputComponent->BindAction(HotbarAction3, ETriggerEvent::Started, this, &ADCPlayerCharacter::Hotbar3Press);
+		EnhancedInputComponent->BindAction(HotbarAction4, ETriggerEvent::Started, this, &ADCPlayerCharacter::Hotbar4Press);
+		EnhancedInputComponent->BindAction(UseItemAction, ETriggerEvent::Completed, InventoryComponent.Get(), &UDCInventoryComponent::PlayerPressedUse);
 	}
 
 	// todo add back once we have a main menu
@@ -406,19 +476,146 @@ void ADCPlayerCharacter::EndSprint()
 	CharacterMovementComponent->MaxWalkSpeed = WalkSpeed;
 }
 
+void ADCPlayerCharacter::StartAim()
+{
+	SpringArmComponent->SetActive(true);
+	PlayerArm->SetActive(false);
+	PlayerBody->SetActive(false);
+	PlayerArm->SetOwnerNoSee(true);
+	PlayerBody->SetOwnerNoSee(true);
+	
+	FVector CurrentOffset = SpringArmComponent->SocketOffset;
+	FVector AddOffset = FVector(-150.0f, 50.0f, 0.0f);
+	SpringArmComponent->SocketOffset = CurrentOffset + AddOffset;
+	GetMesh()->SetOwnerNoSee(false);
+
+	Handgun->SetActive(true);
+	
+	Server_OnStartAim();
+}
+
+void ADCPlayerCharacter::EndAim()
+{
+	PlayerArm->SetActive(true);
+	PlayerBody->SetActive(true);
+	PlayerArm->SetOwnerNoSee(false);
+	PlayerBody->SetOwnerNoSee(false);
+	
+	FVector CurrentOffset = SpringArmComponent->SocketOffset;
+	FVector AddOffset = FVector(150.0f, -50.0f, 0.0f);
+	SpringArmComponent->SocketOffset = CurrentOffset + AddOffset;
+	GetMesh()->SetOwnerNoSee(true);
+
+	Handgun->SetActive(false);
+	
+	Server_OnEndAim();
+}
+
+void ADCPlayerCharacter::Server_OnStartAim_Implementation()
+{
+	Netmulticast_OnStartAim();
+}
+
+void ADCPlayerCharacter::Server_OnEndAim_Implementation()
+{
+	Netmulticast_OnEndAim();
+}
+
+void ADCPlayerCharacter::Netmulticast_OnStartAim_Implementation()
+{
+	bAiming = true;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, bAiming, this);
+	PlayAnimMontage(GunIdleMontage);
+}
+
+void ADCPlayerCharacter::Netmulticast_OnEndAim_Implementation()
+{
+	bAiming = false;
+	MARK_PROPERTY_DIRTY_FROM_NAME(ADCPlayerCharacter, bAiming, this);
+	StopAnimMontage(GunIdleMontage);
+}
+
+void ADCPlayerCharacter::Server_ShootGun_Implementation()
+{
+	ShootGun();
+}
+
+void ADCPlayerCharacter::ShootGun()
+{
+	if (!HasAuthority())
+	{
+		Server_ShootGun();
+		return;
+	}
+	
+	if (bAiming)
+	{
+		Handgun->Shoot();
+	}
+}
+
+void ADCPlayerCharacter::Hotbar1Press()
+{
+	if (!IsValid(InventoryComponent))
+	{
+		return;
+	}
+
+	InventoryComponent->SetSelectedItem(1);
+}
+
+void ADCPlayerCharacter::Hotbar2Press()
+{
+	if (!IsValid(InventoryComponent))
+	{
+		return;
+	}
+
+	InventoryComponent->SetSelectedItem(2);
+}
+
+void ADCPlayerCharacter::Hotbar3Press()
+{
+	if (!IsValid(InventoryComponent))
+	{
+		return;
+	}
+
+	InventoryComponent->SetSelectedItem(3);
+}
+
+void ADCPlayerCharacter::Hotbar4Press()
+{
+	if (!IsValid(InventoryComponent))
+	{
+		return;
+	}
+
+	InventoryComponent->SetSelectedItem(4);
+}
+
+void ADCPlayerCharacter::CheckForItem()
+{
+	if (!IsValid(PlayerHUD))
+	{
+		return;
+	}
+
+	ADCInteractableObject* const HitObject = Cast<ADCInteractableObject>(InteractCheck());
+	if (!IsValid(HitObject))
+	{
+		PlayerHUD->HideActionPrompt();
+		return;
+	}
+
+	PlayerHUD->DisplayActionPrompt(HitObject->GetActionText());
+}
+
 void ADCPlayerCharacter::SetPlayerInfoName()
 {
 	UDCUIPlayerInfoWidget* const PlayerInfoWidget = Cast<UDCUIPlayerInfoWidget>(PlayerInfoWidgetComponent->GetWidget());
 
-	PlayerInfoWidget->SetTrackedPlayer(CustomPlayerName);
-}
-
-void ADCPlayerCharacter::ToggleLight() const
-{
-	if (!HasFlashlight) return;
-
-	Torch->ToggleVisibility();
-	FlashlightAudioComponent->Play();
+	PlayerInfoWidget->SetTrackedPlayer(this, CustomPlayerName);
 }
 
 void ADCPlayerCharacter::LoadSoundFiles()
@@ -426,7 +623,7 @@ void ADCPlayerCharacter::LoadSoundFiles()
 	FStreamableManager& BaseLoader = UAssetManager::GetStreamableManager();
 	TArray<FSoftObjectPath> AudioSoftObjectPaths = {};
 
-	for (const TSoftObjectPtr<USoundBase>& SoundBase : FootstepSounds)
+	for (const TSoftObjectPtr<USoundBase>& SoundBase : DefaultFootstepSounds)
 	{
 		const TSoftObjectPtr<USoundBase> AudioSoftObjectPtr = SoundBase;
 
@@ -462,7 +659,7 @@ void ADCPlayerCharacter::OnRep_CustomPlayerName()
 		return;
 	}
 
-	PlayerInfoWidget->SetTrackedPlayer(CustomPlayerName);
+	PlayerInfoWidget->SetTrackedPlayer(this, CustomPlayerName);
 }
 
 void ADCPlayerCharacter::CalcCamera(float DeltaTime, FMinimalViewInfo& OutResult)
@@ -513,6 +710,11 @@ void ADCPlayerCharacter::ReportNoise()
 	MakeNoise(PlayerLoudness, this, GetActorLocation());
 }
 
+void ADCPlayerCharacter::Client_DisableVoiceChat_Implementation()
+{
+	UKismetSystemLibrary::ExecuteConsoleCommand(this, "ToggleSpeaking 0", GetController<APlayerController>());
+}
+
 void ADCPlayerCharacter::OnStartCrouch(float HalfHeightAdjust, float ScaledHalfHeightAdjust)
 {
 	if (HalfHeightAdjust == 0.f)
@@ -554,30 +756,74 @@ void ADCPlayerCharacter::FootCheck()
 	FHitResult Hit;
 	const FVector PlayerLocation = GetActorLocation();
 	FVector EndLocation = PlayerLocation;
-	EndLocation.Z -= 150.f;
+	EndLocation.Z -= 250.f;
 	const FCollisionQueryParams TraceParams(FName(TEXT("")), true, GetOwner());
 	GetWorld()->LineTraceSingleByChannel(Hit, PlayerLocation, EndLocation, ECC_Visibility, TraceParams);
 
-	if (IsValid(Hit.GetActor()))
+	const AActor* const HitActor = Hit.GetActor();
+	if (IsValid(HitActor))
 	{
-		const int32 RandomIndex = FMath::RandRange(0, FootstepSounds.Num() - 1);
+		check(FootstepData);
 
-		if (FootstepSounds.IsValidIndex(RandomIndex))
+		FName ActorTag = "";
+		if (HitActor->Tags.IsValidIndex(0))
 		{
-			check(FootstepAudioComponent);
-
-			USoundBase* SoundFile = FootstepSounds[RandomIndex].Get();
-			FootstepAudioComponent->SetSound(SoundFile);
-			FootstepAudioComponent->Play();
-
-			ReportNoise();
+			ActorTag = HitActor->Tags[0];
 		}
+
+		int32 RandomIndex;
+		USoundBase* SoundToPlay = nullptr;
+
+		FDCFootstepSounds FootstepSoundsStruct = FootstepData->FootstepsMap.FindRef(ActorTag);
+		if (!FootstepSoundsStruct.FootstepSounds.IsEmpty())
+		{
+			RandomIndex = FMath::RandRange(0, FootstepSoundsStruct.FootstepSounds.Num() - 1);
+
+			if (FootstepSoundsStruct.FootstepSounds.IsValidIndex(RandomIndex))
+			{
+				SoundToPlay = FootstepSoundsStruct.FootstepSounds[RandomIndex];
+			}
+		}
+		else
+		{
+			RandomIndex = FMath::RandRange(0, DefaultFootstepSounds.Num() - 1);
+			if (DefaultFootstepSounds.IsValidIndex(RandomIndex))
+			{
+				SoundToPlay = DefaultFootstepSounds[RandomIndex].Get();
+			}
+		}
+
+		if (!IsValid(SoundToPlay))
+		{
+			return;
+		}
+		
+		check(FootstepAudioComponent);
+
+		FootstepAudioComponent->SetSound(SoundToPlay);
+		FootstepAudioComponent->Play();
+
+		// This is no longer used
+		//ReportNoise();
 	}
 }
 
-void ADCPlayerCharacter::Server_InteractCheck_Implementation()
+void ADCPlayerCharacter::Interact()
 {
-	InteractCheck();
+	if (!HasAuthority())
+	{
+		Server_Interact();
+	}
+
+	AActor* ActorHit = InteractCheck();
+	if (IsValid(ActorHit))
+	{
+		ADCInteractableObject* const InteractableObject = Cast<ADCInteractableObject>(ActorHit);
+		if (IsValid(InteractableObject))
+		{
+			InteractableObject->Interact(this);
+		}
+	}
 }
 
 void ADCPlayerCharacter::StartCrouch()
@@ -605,13 +851,42 @@ void ADCPlayerCharacter::Server_StartSprint_Implementation()
 	StartSprint();
 }
 
-void ADCPlayerCharacter::InteractCheck()
+void ADCPlayerCharacter::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (!HasAuthority())
+	if (!IsValid(OtherActor))
 	{
-		Server_InteractCheck();
+		return;
 	}
 
+	if (!OtherActor->IsA<ADCInteractableObject>())
+	{
+		return;
+	}
+
+	UStaticMeshComponent* const StaticMeshComponent = OtherActor->GetComponentByClass<UStaticMeshComponent>();
+
+	StaticMeshComponent->SetOverlayMaterial(ItemDetectionMaterial);
+}
+
+void ADCPlayerCharacter::OnComponentEndOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	if (!IsValid(OtherActor))
+	{
+		return;
+	}
+
+	if (!OtherActor->IsA<ADCInteractableObject>())
+	{
+		return;
+	}
+
+	UStaticMeshComponent* const StaticMeshComponent = OtherActor->GetComponentByClass<UStaticMeshComponent>();
+
+	StaticMeshComponent->SetOverlayMaterial(nullptr);
+}
+
+AActor* ADCPlayerCharacter::InteractCheck()
+{
 	const UWorld* const World = GetWorld();
 	check(World);
 
@@ -627,26 +902,12 @@ void ADCPlayerCharacter::InteractCheck()
 
 	AActor* const ActorHit = hit.GetActor();
 
-	if (ActorHit)
-	{
-		ADCInteractableObject* const InteractableObject = Cast<ADCInteractableObject>(ActorHit);
-		if (IsValid(InteractableObject))
-		{
-			InteractableObject->Interact(this);
-		}
-	}
+	return ActorHit;
 }
 
-void ADCPlayerCharacter::UpdateFootsteps(const float DeltaTime)
+void ADCPlayerCharacter::Server_Interact_Implementation()
 {
-	DistanceTravelled += GetVelocity().Size() * DeltaTime;
-
-	if (DistanceTravelled >= 100.0f)
-	{
-		DistanceTravelled = 0.0f;
-
-		FootCheck();
-	}
+	Interact();
 }
 
 void ADCPlayerCharacter::Server_UpdateMovementState_Implementation()

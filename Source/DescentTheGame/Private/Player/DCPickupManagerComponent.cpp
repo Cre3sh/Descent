@@ -12,7 +12,6 @@ UDCPickupManagerComponent::UDCPickupManagerComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
 }
 
 bool UDCPickupManagerComponent::AddPickupFromTag(const FGameplayTag InTag)
@@ -20,8 +19,10 @@ bool UDCPickupManagerComponent::AddPickupFromTag(const FGameplayTag InTag)
 	check(PickupsData);
 
 	TSubclassOf<UActorComponent> PickupComponent = PickupsData->PickupTypes.FindRef(InTag);
-
-	check(PickupComponent);
+	if (!IsValid(PickupComponent))
+	{
+		return false;
+	}
 
 	APawn* const OwningPawn = GetOwner<APawn>();
 	if (!IsValid(OwningPawn))
@@ -39,4 +40,9 @@ bool UDCPickupManagerComponent::AddPickupFromTag(const FGameplayTag InTag)
 	CurrentPlayerPickups.AddTag(InTag);
 
 	return true;
+}
+
+bool UDCPickupManagerComponent::HasPickup(const FGameplayTag InTag) const
+{
+	return CurrentPlayerPickups.HasTag(InTag);
 }

@@ -39,7 +39,7 @@ private:
 
 	float GaugeFill = 0.0f;
 
-	float MaxDistance = 10000.0f;
+	float MaxDistance = 7500.0f;
 
 	bool bIsOnCooldown = false;
 };

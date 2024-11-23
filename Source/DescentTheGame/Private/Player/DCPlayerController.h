@@ -7,7 +7,6 @@
 #include "DCPlayerController.generated.h"
 
 class ADCPlayerCharacter;
-class UVOIPTalker;
 
 UCLASS()
 class ADCPlayerController : public APlayerController
@@ -15,10 +14,9 @@ class ADCPlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
-	// Begin APlayerController override
-	virtual bool InputKey(const FInputKeyParams& Params) override;
-	virtual void OnPossess(APawn* InPawn) override;
-	// End APlayerController override
+	// Begin AActor override
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	// End AActor override
 
 	void SpectatePlayer(ADCPlayerCharacter* PlayerCharacter);
 
@@ -27,8 +25,5 @@ public:
 	void DestroyOwningPawn();
 
 private:
-	UPROPERTY()
-	TObjectPtr<UVOIPTalker> VoipTalkerComponent = nullptr;
-	
 	FTimerHandle DestroyPlayerHandle;
 };

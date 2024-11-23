@@ -3,10 +3,11 @@
 #pragma once
 
 #include <GameFramework/PlayerState.h>
+#include <GameplayTagContainer.h>
 
 #include "DCPlayerState.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE(FDCOnPlayerDied);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FDCOnPlayerDied, FGameplayTag, CausingEntity);
 
 UCLASS()
 class ADCPlayerState : public APlayerState
@@ -14,12 +15,18 @@ class ADCPlayerState : public APlayerState
 	GENERATED_BODY()
 
 public:
+	ADCPlayerState();
+
 	// Begin AActor override
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	// End AActor override
 
+	// Begin APlayerState override
+	virtual FString GetPlayerNameCustom() const override;
+	// End APlayerState override
+
 	// Sets the player's death state
-	void SetPlayerDead(const bool bIsPlayerDead);
+	void SetPlayerDead(const bool bIsPlayerDead, FGameplayTag CausingEntity);
 
 	// Returns whether the pawn associated with this player state is dead
 	bool IsPlayerDead() const;
@@ -31,4 +38,7 @@ private:
 	void OnRep_PlayerDied(bool bOldDeathState);
 	UPROPERTY(ReplicatedUsing=OnRep_PlayerDied)
 	bool bIsDead = false;
+
+	UPROPERTY(Replicated)
+	FGameplayTag KillingEntity;
 };
